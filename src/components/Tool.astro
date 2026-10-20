@@ -2,86 +2,93 @@
 // Barbell plate calculator UI. Logic lives in src/lib/plates.js (tested by npm test).
 ---
 <section id="tool" aria-label="Plate calculator" class="rounded-2xl border border-line bg-card p-4 sm:p-6 sm:shadow-[6px_6px_0_0_var(--line)]">
-  <div class="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-8">
+  <noscript><p class="mb-4 rounded-xl bg-brand-soft p-3 text-sm">This calculator needs JavaScript. The tables below list common loads you can read without it.</p></noscript>
+  <div class="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-start md:gap-8">
 
-    <!-- Inputs -->
-    <div class="space-y-5">
-      <fieldset>
-        <legend class="mb-2 text-sm font-semibold">Units</legend>
-        <div class="grid grid-cols-2 gap-2" id="unit-group">
-          <label class="seg"><input type="radio" name="unit" value="lb" class="peer sr-only" checked /><span class="seg-face">Pounds (lb)</span></label>
-          <label class="seg"><input type="radio" name="unit" value="kg" class="peer sr-only" /><span class="seg-face">Kilograms (kg)</span></label>
-        </div>
-      </fieldset>
+    <!-- Inputs. On a phone the weight comes first, then the result, then the settings. -->
+    <div class="contents md:block md:space-y-6">
+      <div class="order-1 space-y-5 md:order-none">
+        <fieldset>
+          <legend class="mb-2 text-sm font-semibold">Units</legend>
+          <div class="grid grid-cols-2 gap-2" id="unit-group">
+            <label class="seg"><input type="radio" name="unit" value="lb" class="peer sr-only" checked /><span class="seg-face">Pounds (lb)</span></label>
+            <label class="seg"><input type="radio" name="unit" value="kg" class="peer sr-only" /><span class="seg-face">Kilograms (kg)</span></label>
+          </div>
+        </fieldset>
 
-      <div>
-        <label for="target" class="mb-2 block text-sm font-semibold">Target weight, bar included <span id="unit-label" class="font-normal text-muted">(lb)</span></label>
-        <div class="flex items-stretch gap-2">
-          <button type="button" id="dec" class="step" aria-label="Subtract one step from the target weight">&minus;</button>
-          <input id="target" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" value="225" aria-describedby="result-status"
-            class="h-14 min-w-0 flex-1 rounded-xl border border-line bg-paper px-3 text-center font-mono text-3xl font-bold tabular-nums outline-none focus:border-brand focus:ring-2 focus:ring-brand/30" />
-          <button type="button" id="inc" class="step" aria-label="Add one step to the target weight">+</button>
+        <div>
+          <label for="target" class="mb-2 block text-sm font-semibold">Target weight, bar included <span id="unit-label" class="font-normal text-muted">(lb)</span></label>
+          <div class="flex items-stretch gap-2">
+            <button type="button" id="dec" class="step" aria-label="Subtract one step from the target weight">&minus;</button>
+            <input id="target" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="done" value="225" aria-describedby="result-status"
+              class="h-14 min-w-0 flex-1 rounded-xl border border-line bg-paper px-3 text-center font-mono text-3xl font-bold tabular-nums outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 aria-[invalid=true]:border-red-600" />
+            <button type="button" id="inc" class="step" aria-label="Add one step to the target weight">+</button>
+          </div>
+          <div id="chips" class="mt-2 flex flex-wrap gap-2" role="group" aria-label="Common weights"></div>
         </div>
-        <div id="chips" class="mt-2 flex flex-wrap gap-2" role="group" aria-label="Common weights"></div>
       </div>
 
-      <fieldset>
-        <legend class="mb-2 text-sm font-semibold">Bar</legend>
-        <div class="flex flex-wrap gap-2" id="bar-group"></div>
-        <div id="custom-bar-wrap" class="mt-2 hidden items-center gap-2">
-          <label for="custom-bar" class="text-sm text-muted">Bar weight</label>
-          <input id="custom-bar" type="text" inputmode="decimal" autocomplete="off" value="25"
-            class="h-12 w-28 rounded-xl border border-line bg-paper px-3 text-center font-mono text-lg font-semibold tabular-nums outline-none focus:border-brand focus:ring-2 focus:ring-brand/30" />
-          <span id="custom-bar-unit" class="text-sm text-muted">lb</span>
-        </div>
-      </fieldset>
+      <div class="order-3 space-y-5 md:order-none">
+        <fieldset>
+          <legend class="mb-2 text-sm font-semibold">Bar</legend>
+          <div class="flex flex-wrap gap-2" id="bar-group"></div>
+          <div id="custom-bar-wrap" class="mt-2 hidden items-center gap-2">
+            <label for="custom-bar" class="text-sm text-muted">Bar weight</label>
+            <input id="custom-bar" type="text" inputmode="decimal" autocomplete="off" value="25"
+              class="h-12 w-28 rounded-xl border border-line bg-paper px-3 text-center font-mono text-lg font-semibold tabular-nums outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 aria-[invalid=true]:border-red-600" />
+            <span id="custom-bar-unit" class="text-sm text-muted">lb</span>
+          </div>
+        </fieldset>
 
-      <fieldset>
-        <legend class="mb-1 text-sm font-semibold">Plates you have</legend>
-        <p class="mb-2 text-sm text-muted">Tap to turn a plate off if your gym does not have it.</p>
-        <div id="plate-group" class="flex flex-wrap gap-2"></div>
-      </fieldset>
+        <fieldset>
+          <legend class="mb-1 text-sm font-semibold">Plates you have</legend>
+          <p class="mb-2 text-sm text-muted">Tap to turn a plate off if your gym does not have it.</p>
+          <div id="plate-group" class="flex flex-wrap gap-2"></div>
+        </fieldset>
 
-      <div>
-        <label class="flex min-h-12 cursor-pointer items-center gap-3 text-sm font-semibold">
-          <input id="collars" type="checkbox" class="h-6 w-6 shrink-0 accent-[var(--brand)]" />
-          Count collars in the total
-        </label>
-        <div id="collar-wrap" class="mt-1 hidden items-center gap-2 pl-9">
-          <label for="collar-w" class="text-sm text-muted">Weight of one collar</label>
-          <input id="collar-w" type="text" inputmode="decimal" autocomplete="off" value="2.5"
-            class="h-12 w-24 rounded-xl border border-line bg-paper px-3 text-center font-mono text-lg font-semibold tabular-nums outline-none focus:border-brand focus:ring-2 focus:ring-brand/30" />
-          <span id="collar-unit" class="text-sm text-muted">lb</span>
+        <div>
+          <label class="flex min-h-12 cursor-pointer items-center gap-3 text-sm font-semibold">
+            <input id="collars" type="checkbox" class="h-6 w-6 shrink-0 accent-[var(--brand)]" />
+            Count collars (clips) in the total
+          </label>
+          <div id="collar-wrap" class="mt-1 hidden flex-wrap items-center gap-2 pl-9">
+            <label for="collar-w" class="text-sm text-muted">Weight of one collar</label>
+            <input id="collar-w" type="text" inputmode="decimal" autocomplete="off" value="1"
+              class="h-12 w-24 rounded-xl border border-line bg-paper px-3 text-center font-mono text-lg font-semibold tabular-nums outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 aria-[invalid=true]:border-red-600" />
+            <span id="collar-unit" class="text-sm text-muted">lb</span>
+            <span class="basis-full text-xs text-muted">A spring collar weighs about 1 lb. A competition collar weighs 2.5 kg.</span>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Result -->
-    <div class="min-w-0 order-first lg:order-none">
-      <div class="min-h-[8.5rem] rounded-xl bg-brand-soft p-4" id="result-box">
+    <div class="order-2 min-w-0 md:order-none md:sticky md:top-20">
+      <div class="min-h-[12rem] rounded-xl bg-brand-soft p-4" id="result-box">
         <p class="text-sm font-semibold uppercase tracking-wide text-brand-ink">Load on each side</p>
-        <div id="side-list" class="mt-2 flex min-h-[2.75rem] flex-wrap items-center gap-2" aria-hidden="false"></div>
-        <p id="result-status" role="status" aria-live="polite" class="mt-3 text-base font-medium"></p>
-        <div id="alts" class="mt-2 flex flex-wrap gap-2"></div>
+        <div id="side-list" class="mt-2 flex min-h-[3rem] flex-wrap items-center gap-2"></div>
+        <p id="result-status" role="status" aria-live="polite" class="mt-3 min-h-[3rem] text-base font-medium"></p>
+        <div id="alts" class="mt-2 flex min-h-[2.75rem] flex-wrap gap-2"></div>
       </div>
 
       <figure class="mt-4">
         <div class="h-[11.5rem] overflow-hidden rounded-xl border border-line bg-paper sm:h-[13rem]">
           <svg id="bar-svg" viewBox="0 0 640 240" preserveAspectRatio="xMidYMid meet" class="h-full w-full" role="img" aria-label="Barbell with plates"></svg>
         </div>
-        <figcaption class="mt-1 text-xs text-muted">One side shown. Load the other side the same way. Heaviest plates go on first, next to the collar.</figcaption>
+        <figcaption class="mt-1 text-xs text-muted">One side shown. Load the other side the same way. Put the heaviest plates on first, against the bar shoulder. The collar goes on last. Colors follow competition plates, so yours may look different.</figcaption>
       </figure>
 
-      <h3 class="mt-5 text-sm font-semibold">Warm-up sets</h3>
+      <h2 class="mt-5 text-sm font-semibold">Warm-up sets</h2>
       <div class="mt-2 overflow-x-auto rounded-xl border border-line">
         <table class="w-full min-w-[20rem] text-left text-sm">
-          <caption class="sr-only">Warm-up sets at 40, 60, 80 and 100 percent of the target weight</caption>
+          <caption class="sr-only">Warm-up sets: the empty bar, then 40, 60 and 80 percent of the target weight, then the work set</caption>
           <thead class="bg-brand-soft text-xs uppercase tracking-wide text-brand-ink">
             <tr><th scope="col" class="px-3 py-2 font-semibold">Set</th><th scope="col" class="px-3 py-2 font-semibold">Weight</th><th scope="col" class="px-3 py-2 font-semibold">Each side</th></tr>
           </thead>
           <tbody id="warm" class="divide-y divide-line"></tbody>
         </table>
       </div>
+      <p id="warm-note" class="mt-2 min-h-[1rem] text-xs text-muted"></p>
     </div>
   </div>
 </section>
@@ -94,7 +101,7 @@
   .step { width:3.5rem; flex:none; border-radius:.75rem; border:1px solid var(--line); background:var(--paper); font-size:1.75rem; font-weight:600; line-height:1; cursor:pointer; }
   .step:hover { border-color: var(--brand); }
   .step:active { background: var(--brand-soft); }
-  .chip { min-height:2.5rem; min-width:3.25rem; padding:.25rem .75rem; border-radius:999px; border:1px solid var(--line); background:var(--paper); font-weight:600; font-size:.9rem; font-variant-numeric:tabular-nums; cursor:pointer; }
+  .chip { min-height:2.75rem; min-width:3.25rem; padding:.25rem .75rem; border-radius:999px; border:1px solid var(--line); background:var(--paper); font-weight:600; font-size:.9rem; font-variant-numeric:tabular-nums; cursor:pointer; }
   .chip:hover { border-color: var(--brand); }
   .plate-pill { display:flex; min-height:3rem; align-items:center; gap:.5rem; border-radius:.75rem; border:1px solid var(--line); background:var(--paper); padding:.35rem .8rem .35rem .6rem; font-weight:600; font-size:.95rem; cursor:pointer; user-select:none; font-variant-numeric:tabular-nums; }
   .plate-pill .dot { width:1.25rem; height:1.25rem; border-radius:999px; border:2px solid rgba(0,0,0,.35); flex:none; }
@@ -108,11 +115,11 @@
   .alt-btn { min-height:2.75rem; padding:.4rem .9rem; border-radius:.75rem; border:1px solid var(--brand); background:var(--card); font-weight:600; font-size:.95rem; color:var(--brand-ink); cursor:pointer; }
   .alt-btn:hover { background: var(--brand); color:#fff; }
 </style>
-
 <script>
-  import { PLATES, BARS, solve, warmups, convertWeight, fmt } from '../lib/plates.js';
+  import { PLATES, DEFAULT_PLATES, BARS, STEP, MAX_TARGET, solve, warmups, convertTarget, parseNumber, describe, fmt } from '../lib/plates.js';
 
   type Unit = 'lb' | 'kg';
+  type Side = { w: number; n: number }[];
   const COLORS: Record<Unit, Record<string, [string, string]>> = {
     lb: { '45': ['#1d4ed8', '#fff'], '35': ['#facc15', '#1c1917'], '25': ['#16a34a', '#fff'], '10': ['#f1f1ee', '#1c1917'], '5': ['#dc2626', '#fff'], '2.5': ['#475569', '#fff'], '1.25': ['#a8a29e', '#1c1917'] },
     kg: { '25': ['#dc2626', '#fff'], '20': ['#1d4ed8', '#fff'], '15': ['#facc15', '#1c1917'], '10': ['#16a34a', '#fff'], '5': ['#f1f1ee', '#1c1917'], '2.5': ['#475569', '#fff'], '1.25': ['#a8a29e', '#1c1917'] },
@@ -122,42 +129,47 @@
     lb: { '45': 450, '35': 400, '25': 340, '10': 260, '5': 205, '2.5': 170, '1.25': 140 },
     kg: { '25': 450, '20': 450, '15': 400, '10': 325, '5': 230, '2.5': 190, '1.25': 160 },
   };
-  const STEP: Record<Unit, number> = { lb: 5, kg: 2.5 };
   const QUICK: Record<Unit, number[]> = { lb: [95, 135, 185, 225, 275, 315, 405], kg: [60, 80, 100, 120, 140, 180] };
-  const KEY = 'plate-calc-v1';
+  const DEFAULT_CUSTOM: Record<Unit, number> = { lb: 25, kg: 10 };
+  const DEFAULT_COLLAR: Record<Unit, number> = { lb: 1, kg: 2.5 };
+  const KEY = 'plate-calc-v2';
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const show = (id: string, on: boolean) => { $(id).classList.toggle('hidden', !on); $(id).classList.toggle('flex', on); };
+  const isWeight = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x) && x >= 0 && x <= MAX_TARGET;
+
   const state = {
     unit: 'lb' as Unit,
     target: 225,
     bar: { lb: '45', kg: '20' } as Record<Unit, string>,
-    customBar: { lb: 25, kg: 10 } as Record<Unit, number>,
-    plates: { lb: [...PLATES.lb], kg: [...PLATES.kg] } as Record<Unit, number[]>,
+    customBar: { ...DEFAULT_CUSTOM } as Record<Unit, number>,
+    plates: { lb: [...DEFAULT_PLATES.lb], kg: [...DEFAULT_PLATES.kg] } as Record<Unit, number[]>,
     collars: false,
-    collarW: { lb: 2.5, kg: 2.5 } as Record<Unit, number>,
+    collarW: { ...DEFAULT_COLLAR } as Record<Unit, number>,
   };
 
   try {
     const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
     if (saved && typeof saved === 'object') {
       if (saved.unit === 'lb' || saved.unit === 'kg') state.unit = saved.unit;
-      if (typeof saved.target === 'number' && saved.target > 0 && saved.target < 5000) state.target = saved.target;
+      if (isWeight(saved.target) && saved.target > 0 && saved.target <= MAX_TARGET) state.target = saved.target;
       for (const u of ['lb', 'kg'] as Unit[]) {
-        if (saved.bar && typeof saved.bar[u] === 'string') state.bar[u] = saved.bar[u];
-        if (saved.customBar && saved.customBar[u] > 0) state.customBar[u] = saved.customBar[u];
-        if (saved.plates && Array.isArray(saved.plates[u])) state.plates[u] = saved.plates[u].filter((w: number) => PLATES[u].includes(w));
-        if (saved.collarW && saved.collarW[u] >= 0) state.collarW[u] = saved.collarW[u];
+        if (saved.bar && typeof saved.bar[u] === 'string' && (saved.bar[u] === 'custom' || (BARS[u] as number[]).map(String).includes(saved.bar[u]))) state.bar[u] = saved.bar[u];
+        if (saved.customBar && isWeight(saved.customBar[u])) state.customBar[u] = saved.customBar[u];
+        if (saved.plates && Array.isArray(saved.plates[u])) state.plates[u] = saved.plates[u].filter((w: unknown) => (PLATES[u] as number[]).includes(w as number));
+        if (saved.collarW && isWeight(saved.collarW[u])) state.collarW[u] = saved.collarW[u];
       }
-      state.collars = !!saved.collars;
+      state.collars = saved.collars === true;
     }
   } catch {}
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 
-  const num = (s: string) => { const v = parseFloat(s.replace(',', '.')); return Number.isFinite(v) ? v : NaN; };
+  // The last number the person chose, so a unit round trip returns to it (135 lb, 60 kg, 135 lb).
+  let anchor = { unit: state.unit, target: state.target };
+
   const barWeight = () => {
     const id = state.bar[state.unit];
-    if (id === 'custom') return state.customBar[state.unit];
-    return Number(id);
+    return id === 'custom' ? state.customBar[state.unit] : Number(id);
   };
 
   function buildStatic() {
@@ -170,17 +182,14 @@
     $<HTMLInputElement>('custom-bar').value = fmt(state.customBar[u]);
     $<HTMLInputElement>('collar-w').value = fmt(state.collarW[u]);
     $<HTMLInputElement>('collars').checked = state.collars;
-    $('collar-wrap').classList.toggle('hidden', !state.collars);
-    $('collar-wrap').classList.toggle('flex', state.collars);
+    show('collar-wrap', state.collars);
 
     $('chips').innerHTML = QUICK[u].map((w) => `<button type="button" class="chip" data-w="${w}">${w}</button>`).join('');
 
-    const bars = [...BARS[u].map((b) => ({ id: b.id, label: b.label })), { id: 'custom', label: 'Custom' }];
-    if (!bars.some((b) => b.id === state.bar[u])) state.bar[u] = bars[0].id;
+    const bars = [...(BARS[u] as number[]).map((w) => ({ id: String(w), label: `${w} ${u}` })), { id: 'custom', label: 'Custom' }];
     $('bar-group').innerHTML = bars.map((b) =>
       `<label class="seg"><input type="radio" name="bar" value="${b.id}" class="peer sr-only"${b.id === state.bar[u] ? ' checked' : ''} /><span class="seg-face">${b.label}</span></label>`).join('');
-    $('custom-bar-wrap').classList.toggle('hidden', state.bar[u] !== 'custom');
-    $('custom-bar-wrap').classList.toggle('flex', state.bar[u] === 'custom');
+    show('custom-bar-wrap', state.bar[u] === 'custom');
 
     $('plate-group').innerHTML = PLATES[u].map((w) => {
       const [bg] = COLORS[u][String(w)];
@@ -188,42 +197,52 @@
     }).join('');
   }
 
-  function drawBar(list: { w: number; n: number }[], collarOn: boolean) {
+  // Drawing geometry, in SVG units. The viewBox is 240 high; the width shrinks to fit the plates.
+  const CY = 120, MAXH = 216, START_X = 112, END_X = 600, GAP = 2, COLLAR_PX = 12, MAX_VIEW_W = 640, MIN_VIEW_W = 300;
+
+  function drawBar(list: Side, collarOn: boolean) {
     const u = state.unit;
-    const plates: { w: number }[] = [];
-    list.forEach((p) => { for (let i = 0; i < p.n; i++) plates.push({ w: p.w }); });
-    const CY = 120, MAXH = 216, startX = 112, endX = 600, gap = 2;
-    const baseW = (w: number) => (w >= (u === 'lb' ? 35 : 20) ? 30 : w >= (u === 'lb' ? 10 : 5) ? 24 : 16);
-    const collarW = collarOn ? 12 : 0;
-    const avail = endX - startX - collarW - 4;
-    let widths = plates.map((p) => baseW(p.w));
-    const total = widths.reduce((a, b) => a + b + gap, 0);
-    if (total > avail) { const k = avail / total; widths = widths.map((w) => Math.max(5, w * k)); }
-    let x = startX;
+    const plates: number[] = [];
+    list.forEach((p) => { for (let i = 0; i < p.n; i++) plates.push(p.w); });
+    const big = u === 'lb' ? 35 : 20, mid = u === 'lb' ? 10 : 5;
+    const baseW = (w: number) => (w >= big ? 30 : w >= mid ? 24 : 16);
+    const collarPx = collarOn ? COLLAR_PX : 0;
+    const avail = END_X - START_X - collarPx - 4;
+    let widths = plates.map(baseW);
+    const slots = widths.reduce((a, b) => a + b + GAP, 0);
+    // Scale whole slots (plate plus gap) so the row never runs past the sleeve.
+    if (slots > avail) { const k = avail / slots; widths = widths.map((w) => Math.max(5, (w + GAP) * k - GAP)); }
+    const endX = START_X + widths.reduce((a, b) => a + b + GAP, 0);
+    const viewW = Math.min(MAX_VIEW_W, Math.max(MIN_VIEW_W, endX + collarPx + 40));
+    $('bar-svg').setAttribute('viewBox', `0 0 ${viewW.toFixed(0)} 240`);
+    let x = START_X;
     let s = '';
-    // bar shaft and sleeve
     s += `<rect x="0" y="${CY - 7}" width="104" height="14" fill="#8c8c92"/>`;
     s += `<rect x="0" y="${CY - 7}" width="104" height="4" fill="#fff" opacity=".28"/>`;
     s += `<rect x="94" y="${CY - 24}" width="12" height="48" rx="3" fill="#6b6b72"/>`;
-    s += `<rect x="106" y="${CY - 11}" width="${640 - 106}" height="22" fill="#b4b4ba"/>`;
-    s += `<rect x="106" y="${CY - 11}" width="${640 - 106}" height="6" fill="#fff" opacity=".35"/>`;
-    plates.forEach((p, i) => {
-      const key = fmt(p.w);
-      const [bg, fg] = COLORS[u][key] || ['#555', '#fff'];
-      const h = (MAXH * (DIAM[u][key] || 200)) / 450;
+    s += `<rect x="106" y="${CY - 11}" width="${viewW - 106}" height="22" fill="#b4b4ba"/>`;
+    s += `<rect x="106" y="${CY - 11}" width="${viewW - 106}" height="6" fill="#fff" opacity=".35"/>`;
+    plates.forEach((pw, i) => {
+      const key = fmt(pw);
+      const [bg, fg] = COLORS[u][key];
+      const h = (MAXH * DIAM[u][key]) / 450;
       const w = widths[i];
       s += `<rect x="${x.toFixed(1)}" y="${(CY - h / 2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="4" fill="${bg}" stroke="rgba(0,0,0,.45)" stroke-width="1.5"/>`;
       if (w >= 15) {
         const fs = Math.min(15, w * 0.62);
         s += `<text x="${(x + w / 2).toFixed(1)}" y="${CY}" transform="rotate(-90 ${(x + w / 2).toFixed(1)} ${CY})" text-anchor="middle" dominant-baseline="central" font-family="ui-sans-serif,system-ui,sans-serif" font-size="${fs.toFixed(1)}" font-weight="700" fill="${fg}">${key}</text>`;
       }
-      x += w + gap;
+      x += w + GAP;
     });
-    if (collarOn) s += `<rect x="${(x + 1).toFixed(1)}" y="${CY - 18}" width="${collarW - 2}" height="36" rx="3" fill="#2b2b30" stroke="rgba(255,255,255,.25)"/>`;
+    if (collarOn) s += `<rect x="${(x + 1).toFixed(1)}" y="${CY - 18}" width="${COLLAR_PX - 2}" height="36" rx="3" fill="#2b2b30" stroke="rgba(255,255,255,.25)"/>`;
     $('bar-svg').innerHTML = s;
     const desc = list.length ? list.map((p) => `${p.n} of ${fmt(p.w)} ${u}`).join(', ') : 'no plates';
     $('bar-svg').setAttribute('aria-label', `Barbell with ${desc} on each side`);
   }
+
+  const cell = (html: string, cls = '') => `<td class="px-3 py-2.5 tabular-nums ${cls}">${html}</td>`;
+  const row = (label: string, weight: string, side: string) =>
+    `<tr><th scope="row" class="px-3 py-2.5 font-semibold">${label}</th>${cell(weight, 'font-mono')}${cell(side)}</tr>`;
 
   function render() {
     const u = state.unit;
@@ -231,23 +250,38 @@
     const collar = state.collars ? state.collarW[u] : 0;
     const plates = state.plates[u];
     const target = state.target;
-    const r: any = solve({ target, bar, collar, plates });
-    const list: { w: number; n: number }[] = r.list || [];
     const status = $('result-status');
     const alts = $('alts');
     alts.innerHTML = '';
+    $('warm-note').textContent = '';
+
+    // A blank or invalid bar or collar field must not hide behind an old value.
+    const badField = !Number.isFinite(bar) || (state.collars && !Number.isFinite(collar));
+    if (badField) {
+      $('side-list').innerHTML = '<span class="text-lg font-semibold">Enter a weight</span>';
+      status.textContent = !Number.isFinite(bar) ? 'Enter the bar weight to see the plates.' : 'Enter the collar weight, or turn collars off.';
+      drawBar([], false);
+      $('warm').innerHTML = [0, 1, 2, 3, 4].map(() => row('-', '-', '-')).join('');
+      save();
+      return;
+    }
+
+    const r: any = solve({ target, bar, collar, plates });
+    const list: Side = r.list || [];
+    const withCollars = collar ? ' and collars' : '';
 
     $('side-list').innerHTML = list.length
-      ? list.map((p) => { const [bg] = COLORS[u][fmt(p.w)] || ['#555']; return `<span class="load-chip"><span class="dot" style="background:${bg}"></span>${fmt(p.w)}<small>&times; ${p.n}</small></span>`; }).join('')
+      ? list.map((p) => { const [bg] = COLORS[u][fmt(p.w)]; return `<span class="load-chip"><span class="dot" style="background:${bg}"></span>${fmt(p.w)}<small>&times; ${p.n}</small></span>`; }).join('')
       : `<span class="text-lg font-semibold">${r.status === 'empty' ? 'Enter a weight' : 'Empty bar'}</span>`;
 
-    if (r.status === 'empty') status.textContent = 'Type a target weight to see the plates.';
-    else if (r.status === 'bar') status.textContent = `${fmt(r.total)} ${u} is the bar${collar ? ' and collars' : ''} alone. No plates needed.`;
-    else if (r.status === 'below') status.textContent = `Your target is under the bar${collar ? ' and collars' : ''} (${fmt(r.base)} ${u}). Use a lighter bar or a higher target.`;
-    else if (r.status === 'exact') status.textContent = `Exact: ${fmt(r.total)} ${u} total with ${fmt(bar)} ${u} bar${collar ? " and collars" : ""}.`;
+    const onEach = list.length ? ` Load ${describe(list)} on each side.` : '';
+    if (r.status === 'empty') status.textContent = 'Enter a weight above 0 to see the plates.';
+    else if (r.status === 'bar') status.textContent = `${fmt(r.total)} ${u} is the bar${withCollars} alone. No plates needed.`;
+    else if (r.status === 'below') status.textContent = `Your target is under the bar${withCollars} (${fmt(r.base)} ${u}). Use a lighter bar or a higher target.`;
+    else if (r.status === 'exact') status.textContent = `Exact: ${fmt(r.total)} ${u} total with a ${fmt(bar)} ${u} bar${withCollars}.${onEach}`;
     else {
       status.textContent = plates.length
-        ? `Cannot hit ${fmt(target)} ${u} exactly. Closest load is ${fmt(r.total)} ${u}.`
+        ? `Cannot hit ${fmt(target)} ${u} exactly. Closest load is ${fmt(r.total)} ${u} with a ${fmt(bar)} ${u} bar${withCollars}.${onEach}`
         : 'Turn on at least one plate size to load the bar.';
       const mk = (t: number, label: string) => `<button type="button" class="alt-btn" data-w="${t}">${label} ${fmt(t)} ${u}</button>`;
       if (r.lower.total !== r.total && r.lower.total > r.base) alts.innerHTML += mk(r.lower.total, 'Go lighter:');
@@ -257,83 +291,95 @@
 
     drawBar(list, state.collars);
 
-    const w = warmups({ target, bar, collar, plates });
-    $('warm').innerHTML = w.map((row: any) => {
-      const label = row.pct === 100 ? 'Work set' : `${row.pct}%`;
-      let wt = '', side = '';
-      if (row.status === 'empty') { wt = '-'; side = '-'; }
-      else if (row.status === 'bar' || row.status === 'below') { wt = `${fmt(row.base)} ${u}`; side = 'Bar only'; }
-      else {
-        wt = `${fmt(row.total)} ${u}`;
-        side = row.list.length ? row.list.map((p: any) => `${fmt(p.w)}${p.n > 1 ? `&times;${p.n}` : ''}`).join(' + ') : 'Bar only';
-        if (row.status === 'closest' && row.total !== row.want) wt += ' <span class="text-muted font-normal">(closest)</span>';
-      }
-      return `<tr><th scope="row" class="px-3 py-2.5 font-semibold">${label}</th><td class="px-3 py-2.5 font-mono tabular-nums">${wt}</td><td class="px-3 py-2.5 tabular-nums">${side}</td></tr>`;
-    }).join('');
+    // Warm-ups: empty bar, then 40/60/80 percent rounded to a practical jump, then the work set.
+    let rounded = false;
+    const warmRow = (label: string, x: any, ramp = true) => {
+      if (x.status === 'empty') return row(label, '-', '-');
+      if (x.status === 'bar' || x.status === 'below') return row(label, `${fmt(x.base)} ${u}`, 'Bar only');
+      if (ramp && x.total !== x.want) rounded = true;
+      return row(label, `${fmt(x.total)} ${u}`, x.list.map((p: { w: number; n: number }) => `${fmt(p.w)}${p.n > 1 ? `&times;${p.n}` : ''}`).join(' + '));
+    };
+    const ramp = warmups({ target, bar, collar, plates, percents: [40, 60, 80], step: STEP[u] }) as any[];
+    $('warm').innerHTML = [
+      target > 0 ? row('Empty bar', `${fmt(r.base)} ${u}`, 'Bar only') : row('Empty bar', '-', '-'),
+      ...ramp.map((x) => warmRow(`${x.pct}%`, x)),
+      warmRow('Work set', r, false),
+    ].join('');
+    if (rounded) $('warm-note').textContent = 'Warm-ups are rounded to loads your plates can make.';
     save();
   }
 
-  function setTarget(v: number, syncInput = true) {
+  function setTarget(v: number) {
     if (!(v > 0)) return;
-    state.target = Math.min(v, 4999);
-    if (syncInput) $<HTMLInputElement>('target').value = fmt(state.target);
+    state.target = Math.min(v, MAX_TARGET);
+    anchor = { unit: state.unit, target: state.target };
+    $<HTMLInputElement>('target').value = fmt(state.target);
     render();
   }
+  const nudge = (dir: 1 | -1) => setTarget(Math.max(STEP[state.unit], (state.target || 0) + dir * STEP[state.unit]));
+  const pickWeight = (e: Event) => {
+    const b = (e.target as HTMLElement).closest('button[data-w]') as HTMLElement | null;
+    if (b) setTarget(Number(b.dataset.w));
+  };
 
   // Events
   const targetEl = $<HTMLInputElement>('target');
   targetEl.addEventListener('input', () => {
-    const v = num(targetEl.value);
-    if (v > 0) { state.target = Math.min(v, 4999); render(); }
-    else { state.target = 0; render(); }
+    const v = parseNumber(targetEl.value);
+    targetEl.setAttribute('aria-invalid', String(targetEl.value.trim() !== '' && !(v > 0)));
+    state.target = v > 0 ? Math.min(v, MAX_TARGET) : 0;
+    if (v > MAX_TARGET) targetEl.value = fmt(MAX_TARGET);
+    anchor = { unit: state.unit, target: state.target };
+    render();
   });
-  targetEl.addEventListener('blur', () => { if (state.target > 0) targetEl.value = fmt(state.target); });
+  targetEl.addEventListener('blur', () => { if (state.target > 0) { targetEl.value = fmt(state.target); targetEl.removeAttribute('aria-invalid'); } });
   targetEl.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowUp') { e.preventDefault(); setTarget((state.target || 0) + STEP[state.unit]); }
-    if (e.key === 'ArrowDown') { e.preventDefault(); setTarget(Math.max(STEP[state.unit], (state.target || 0) - STEP[state.unit])); }
+    if (e.key === 'ArrowUp') { e.preventDefault(); nudge(1); }
+    if (e.key === 'ArrowDown') { e.preventDefault(); nudge(-1); }
   });
-  $('inc').addEventListener('click', () => setTarget((state.target || 0) + STEP[state.unit]));
-  $('dec').addEventListener('click', () => setTarget(Math.max(STEP[state.unit], (state.target || 0) - STEP[state.unit])));
-  $('chips').addEventListener('click', (e) => {
-    const b = (e.target as HTMLElement).closest('button[data-w]') as HTMLElement | null;
-    if (b) setTarget(Number(b.dataset.w));
-  });
-  $('alts').addEventListener('click', (e) => {
-    const b = (e.target as HTMLElement).closest('button[data-w]') as HTMLElement | null;
-    if (b) setTarget(Number(b.dataset.w));
-  });
+  $('inc').addEventListener('click', () => nudge(1));
+  $('dec').addEventListener('click', () => nudge(-1));
+  $('chips').addEventListener('click', pickWeight);
+  $('alts').addEventListener('click', pickWeight);
   $('unit-group').addEventListener('change', (e) => {
     const to = (e.target as HTMLInputElement).value as Unit;
     if (to === state.unit) return;
-    const step = STEP[to];
-    state.target = Math.max(step, Math.round(convertWeight(state.target || 0, state.unit, to) / step) * step);
+    state.target = anchor.unit === to && anchor.target > 0 ? anchor.target : convertTarget(state.target, state.unit, to);
     state.unit = to;
     buildStatic(); render();
   });
   $('bar-group').addEventListener('change', (e) => {
     state.bar[state.unit] = (e.target as HTMLInputElement).value;
-    const custom = state.bar[state.unit] === 'custom';
-    $('custom-bar-wrap').classList.toggle('hidden', !custom);
-    $('custom-bar-wrap').classList.toggle('flex', custom);
+    show('custom-bar-wrap', state.bar[state.unit] === 'custom');
     render();
   });
-  $('custom-bar').addEventListener('input', (e) => {
-    const v = num((e.target as HTMLInputElement).value);
-    if (v >= 0) { state.customBar[state.unit] = v; render(); }
-  });
+
+  // Custom bar and collar fields: invalid text shows a message, and blur puts the used value back.
+  function weightField(id: string, store: Record<Unit, number>, fallback: Record<Unit, number>) {
+    const el = $<HTMLInputElement>(id);
+    el.addEventListener('input', () => {
+      const v = parseNumber(el.value);
+      store[state.unit] = v <= MAX_TARGET ? v : NaN;
+      el.setAttribute('aria-invalid', String(!Number.isFinite(store[state.unit])));
+      render();
+    });
+    el.addEventListener('blur', () => {
+      if (!Number.isFinite(store[state.unit])) { store[state.unit] = fallback[state.unit]; render(); }
+      el.value = fmt(store[state.unit]);
+      el.removeAttribute('aria-invalid');
+    });
+  }
+  weightField('custom-bar', state.customBar, DEFAULT_CUSTOM);
+  weightField('collar-w', state.collarW, DEFAULT_COLLAR);
+
   $('plate-group').addEventListener('change', () => {
     state.plates[state.unit] = Array.from(document.querySelectorAll<HTMLInputElement>('input[name=plate]:checked')).map((i) => Number(i.value));
     render();
   });
   $('collars').addEventListener('change', (e) => {
     state.collars = (e.target as HTMLInputElement).checked;
-    $('collar-wrap').classList.toggle('hidden', !state.collars);
-    $('collar-wrap').classList.toggle('flex', state.collars);
+    show('collar-wrap', state.collars);
     render();
-  });
-  $('collar-w').addEventListener('input', (e) => {
-    const v = num((e.target as HTMLInputElement).value);
-    if (v >= 0) { state.collarW[state.unit] = v; render(); }
   });
 
   buildStatic();
