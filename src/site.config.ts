@@ -7,14 +7,13 @@ export default {
   keyword: 'plate calculator',        // main keyword (search phrase)
   h1: 'Barbell plate calculator',     // visible page heading
   title: 'Plate Calculator: Barbell Plates Per Side (lb & kg)', // home page title, under 60 chars
-  keywords: ['barbell plate calculator', 'plate loading calculator', 'weight plate calculator', 'how to load a barbell', 'barbell calculator lbs', 'warm-up calculator'],
-  tagline: 'Free, fast and private',
+  tagline: 'Free and fast',
   description:
     'Enter a target weight and see the plates to load on each side of the barbell. lb and kg, any bar, your plates, warm-up sets.',
   email: 'hello@platecalculatoronline.com',       // contact email (shown on Contact and Privacy pages)
   ga4: '',                            // GA4 measurement ID, e.g. 'G-XXXXXXXXXX'. Empty = Google Analytics off
   adsense: '',                        // AdSense publisher ID, e.g. 'ca-pub-1234567890123456'. Empty = ads off
-  brand: '#c2410c',                   // brand colour (hex)
+  brand: '#c2410c',                   // brand color (hex)
   locale: 'en-US',                    // BCP 47 language tag
   ogImage: '/og.png',
   category: 'HealthApplication',   // schema.org applicationCategory

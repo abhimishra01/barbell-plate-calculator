@@ -23,11 +23,6 @@ const jsonLd = [
   },
   {
     '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [{ '@type': 'ListItem', position: 1, name: site.name, item: `${base}/` }],
-  },
-  {
-    '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: faq.map((f) => ({
       '@type': 'Question',
@@ -39,18 +34,11 @@ const jsonLd = [
 ---
 <Base jsonLd={jsonLd}>
   <section class="mx-auto max-w-5xl px-4 pt-10 sm:pt-16">
-    <p class="mb-3 inline-block rounded-full bg-brand-soft px-3 py-1 text-sm font-medium text-brand-ink">{site.tagline}</p>
-    <h1 class="max-w-3xl text-4xl font-extrabold leading-[1.05] tracking-tight [text-wrap:balance] sm:text-6xl">
+    <h1 class="max-w-3xl text-3xl font-extrabold leading-[1.05] tracking-tight [text-wrap:balance] sm:text-6xl">
       {site.h1}
     </h1>
-    <p class="mt-4 max-w-2xl text-lg text-muted">{site.description}</p>
-    <div class="mt-8 min-h-[44rem] lg:min-h-[34rem]"><Tool /></div>
-    <p class="mt-6 text-sm text-muted">
-      <a href="/about/" class="underline underline-offset-4 hover:text-ink">About</a> &middot;
-      <a href="/privacy/" class="underline underline-offset-4 hover:text-ink">Privacy Policy</a> &middot;
-      <a href="/terms/" class="underline underline-offset-4 hover:text-ink">Terms</a> &middot;
-      <a href="/contact/" class="underline underline-offset-4 hover:text-ink">Contact</a>
-    </p>
+    <p class="mt-4 hidden max-w-2xl text-lg text-muted sm:block">{site.description}</p>
+    <div class="mt-5 min-h-[44rem] sm:mt-8 md:min-h-[34rem]"><Tool /></div>
   </section>
   <Article />
   <Faq />
