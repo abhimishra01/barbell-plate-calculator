@@ -271,7 +271,8 @@ const { target, unit } = Astro.props;
   if (shared.plates && shared.plates.length) state.plates[state.unit] = shared.plates;
   if (shared.limits) state.limits[state.unit] = { ...shared.limits };
   if (shared.collar) { state.collars = true; state.collarW[state.unit] = shared.collar; }
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+  // A load page does not save: visiting it must not replace the settings the person saved on the home page.
+  const save = () => { if (pageUnit) return; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 
   // The last number the person chose, so a unit round trip returns to it (135 lb, 60 kg, 135 lb).
   let anchor = { unit: state.unit, target: state.target };
