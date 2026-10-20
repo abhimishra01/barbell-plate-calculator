@@ -263,7 +263,7 @@ export function fromQuery(text) {
   const unit = q.get('u') === 'kg' ? 'kg' : q.get('u') === 'lb' ? 'lb' : null;
   if (unit) out.unit = unit;
   const w = num(q.get('w'), 0.01); if (w !== null) out.target = w;
-  const bar = num(q.get('bar'), 0); if (bar !== null) out.bar = bar;
+  const bar = num(q.get('bar'), 0.01); if (bar !== null) out.bar = bar;
   const c = num(q.get('c'), 0.01); if (c !== null) out.collar = c;
   if (q.has('p') && unit) {
     out.plates = q.get('p').split(',').map(Number).filter((n) => PLATES[unit].includes(n));

@@ -186,6 +186,7 @@ test('share query round trip and bad input', () => {
   assert.equal(q, 'w=225&u=lb&bar=45&p=45,25,10,5,2.5');
   assert.deepEqual(fromQuery(q), { unit: 'lb', target: 225, bar: 45, plates: [45, 25, 10, 5, 2.5] });
   assert.deepEqual(fromQuery('?w=100&u=kg&bar=20&p=25,15,99&c=2.5'), { unit: 'kg', target: 100, bar: 20, collar: 2.5, plates: [25, 15] });
+  assert.deepEqual(fromQuery('?w=225&bar=0'), { target: 225 }); // a 0 bar is not a bar
   assert.deepEqual(fromQuery('?w=abc&u=stone&bar=-5&p=45'), {});
   assert.equal(fromQuery('?w=999999').target, undefined);
 });

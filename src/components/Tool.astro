@@ -243,7 +243,7 @@ const { target, unit } = Astro.props;
       if (isWeight(saved.target) && saved.target > 0 && saved.target <= MAX_TARGET) state.target = saved.target;
       for (const u of ['lb', 'kg'] as Unit[]) {
         if (saved.bar && typeof saved.bar[u] === 'string' && (saved.bar[u] === 'custom' || barWeights(u).map(String).includes(saved.bar[u]))) state.bar[u] = saved.bar[u];
-        if (saved.customBar && isWeight(saved.customBar[u])) state.customBar[u] = saved.customBar[u];
+        if (saved.customBar && isWeight(saved.customBar[u]) && saved.customBar[u] > 0) state.customBar[u] = saved.customBar[u];
         if (saved.plates && Array.isArray(saved.plates[u])) state.plates[u] = saved.plates[u].filter((w: unknown) => (PLATES[u] as number[]).includes(w as number));
         if (saved.collarW && isWeight(saved.collarW[u])) state.collarW[u] = saved.collarW[u];
         const intIn = (v: unknown, max: number) => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= max;
@@ -272,7 +272,11 @@ const { target, unit } = Astro.props;
   if (shared.limits) state.limits[state.unit] = { ...shared.limits };
   if (shared.collar) { state.collars = true; state.collarW[state.unit] = shared.collar; }
   // A load page does not save: visiting it must not replace the settings the person saved on the home page.
-  const save = () => { if (pageUnit) return; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
+  // A share link shows its own numbers but does not replace the saved settings until the person changes something.
+  const fromShare = Object.keys(shared).length > 0;
+  let edited = false;
+  for (const ev of ['input', 'change', 'click']) root.addEventListener(ev, () => { edited = true; }, true);
+  const save = () => { if (pageUnit || (fromShare && !edited)) return; try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 
   // The last number the person chose, so a unit round trip returns to it (135 lb, 60 kg, 135 lb).
   let anchor = { unit: state.unit, target: state.target };
@@ -396,7 +400,7 @@ const { target, unit } = Astro.props;
     const badField = !Number.isFinite(bar) || (state.collars && !Number.isFinite(collar));
     if (badField) {
       $('side-list').innerHTML = '<span class="text-lg font-semibold">Enter a weight</span>';
-      status.textContent = !Number.isFinite(bar) ? 'Enter the bar weight to see the plates.' : 'Enter the collar weight, or turn collars off.';
+      status.textContent = !Number.isFinite(bar) ? 'Enter a bar weight above 0 to see the plates.' : 'Enter the collar weight, or turn collars off.';
       drawBar([], false);
       $('warm').innerHTML = [0, 1, 2, 3, 4].map(() => row('-', '-', '-')).join('');
       $('print-card').innerHTML = '';
@@ -581,11 +585,11 @@ const { target, unit } = Astro.props;
   });
 
   // Custom bar and collar fields: invalid text shows a message, and blur puts the used value back.
-  function weightField(id: string, store: Record<Unit, number>, fallback: Record<Unit, number>) {
+  function weightField(id: string, store: Record<Unit, number>, fallback: Record<Unit, number>, min = 0) {
     const el = $<HTMLInputElement>(id);
     el.addEventListener('input', () => {
       const v = parseNumber(el.value);
-      store[state.unit] = v <= MAX_TARGET ? v : NaN;
+      store[state.unit] = v <= MAX_TARGET && v >= min ? v : NaN;
       el.setAttribute('aria-invalid', String(!Number.isFinite(store[state.unit])));
       render();
     });
@@ -595,7 +599,7 @@ const { target, unit } = Astro.props;
       el.removeAttribute('aria-invalid');
     });
   }
-  weightField('custom-bar', state.customBar, DEFAULT_CUSTOM);
+  weightField('custom-bar', state.customBar, DEFAULT_CUSTOM, 0.01);
   weightField('collar-w', state.collarW, DEFAULT_COLLAR);
 
   $('plate-group').addEventListener('change', () => {
