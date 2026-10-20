@@ -8,6 +8,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "test": "node --test tests/plates.test.mjs",
+    "build:bingemind": "npm test && SITE_MODE=bingemind astro build --outDir dist-bingemind",
     "deploy": "npm test && npm run build && node --experimental-strip-types --disable-warning=ExperimentalWarning scripts/deploy.mjs"
   },
   "dependencies": {

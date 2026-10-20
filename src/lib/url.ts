@@ -3,3 +3,6 @@ export const BASE = import.meta.env.BASE_URL.endsWith('/') ? import.meta.env.BAS
 export const url = (path = '') => BASE + path.replace(/^\//, '');
 // The page path without the base, for canonical links: "/privacy/" at the root and under /slug/.
 export const pathInSite = (pathname: string) => (BASE !== '/' && pathname.startsWith(BASE) ? `/${pathname.slice(BASE.length)}` : pathname);
+
+// True in the bingemind.com build (SITE_MODE=bingemind): the real public home, so indexable.
+export const isBingemind = import.meta.env.SITE_MODE === 'bingemind';
