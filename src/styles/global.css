@@ -1,4 +1,5 @@
 @import "tailwindcss" source(none);
+@import "./skin-retro.css";
 @source "../";
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -11,6 +12,7 @@
   --color-ink: var(--ink);
   --color-muted: var(--muted);
   --color-line: var(--line);
+  --color-edge: var(--edge);
   --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
@@ -22,6 +24,7 @@
   --ink: #16161a;
   --muted: #5d5d66;
   --line: #e2e0d8;
+  --edge: #878c93;
   --brand-ink: color-mix(in oklab, var(--brand) 82%, black);
   --brand-soft: color-mix(in oklab, var(--brand) 10%, var(--paper));
 }
@@ -32,6 +35,7 @@
   --ink: #ececea;
   --muted: #a0a0a8;
   --line: #2a2b30;
+  --edge: #6b7078;
   --brand-ink: color-mix(in oklab, var(--brand) 55%, white);
   --brand-soft: color-mix(in oklab, var(--brand) 18%, var(--paper));
 }

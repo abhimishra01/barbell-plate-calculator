@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Tool from '../components/Tool.astro';
+import AdSlot from '../components/AdSlot.astro';
 import Article from '../components/Article.astro';
 import Faq from '../components/Faq.astro';
 import site from '../site.config.ts';
@@ -39,6 +40,7 @@ const jsonLd = [
     </h1>
     <p class="mt-4 hidden max-w-2xl text-lg text-muted sm:block">{site.description}</p>
     <div class="mt-5 min-h-[44rem] sm:mt-8 md:min-h-[34rem]"><Tool /></div>
+    <AdSlot />
   </section>
   <Article />
   <Faq />

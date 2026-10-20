@@ -17,7 +17,7 @@ const canonical = new URL(pathInSite(Astro.url.pathname), base).href;
 const image = site.ogImage ? new URL(url(site.ogImage), Astro.site).href : '';
 ---
 <!doctype html>
-<html lang={site.locale} data-theme="light" style={`--brand:${site.brand}`}>
+<html lang={site.locale} data-theme="light" data-skin={site.skin} style={`--brand:${site.brand}`}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
