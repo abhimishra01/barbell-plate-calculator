@@ -58,3 +58,17 @@
 18. How many plates fit on an Olympic bar
 19. Plate loading with 45 lb, 25 lb, 10 lb and 5 lb only
 20. Powerlifting meet plate loading (competition collars)
+
+## Gap fix (2026-10-20)
+Done:
+- Copy result and Copy link (share link ?w=&u=&bar=&p=&c=, read on load, validated). Links work on the home and load pages.
+- Two nearest-load cards (under and over, with plates) plus a hint such as "Turn on the 1.25 lb plate to reach 227.5 lb exactly".
+- Plate set presets (lb: Commercial gym default, Home set, All plates; kg: Competition default, Gym, Home set). The lb default no longer includes 35 lb plates. Saved settings key bumped to v3.
+- 10 pre-rendered load pages (95, 135, 185, 225, 275, 315, 405 lb; 60, 100, 140 kg), each with its own intro, who lifts it, a tip, a computed table of other bars, plate sets and collars, a static warm-up table, FAQ, HowTo, FAQPage and Breadcrumb schema, and links to sibling loads. Linked from the home page. In the sitemap.
+- Total shown in both units (225 lb = 102.1 kg). Editable warm-up percents and Copy warm-up. HowTo schema on the home page. Article text updated for the new default set.
+- Tests: 32 of 32 pass (5 new). Build: 16 pages. Lighthouse (home, mobile): 100/100/100/100, CLS 0; load pages 100 performance, SEO 100, best practices 100, accessibility checked after fix on home only (100). Screenshots at 1280 and 390, light and dark, in screenshots/gap-*.png.
+Skipped:
+- Reverse mode (count a loaded bar): a second mode adds a lot of UI; later.
+- Extra bar types (EZ, trap, safety, no bar): Custom bar covers them.
+- Plate quantity limits, sticky mini result bar, printable card, gym-color plate option: lower value, later.
+- More load pages beyond 10 (brief cap).

@@ -156,3 +156,36 @@ test('parseNumber: decimal comma, thousands comma, junk', () => {
   assert.ok(Number.isNaN(parseNumber('')));
   assert.ok(Number.isNaN(parseNumber('12abc')));
 });
+
+import { PRESETS, exactHint, resultText, parsePercents, toQuery, fromQuery } from '../src/lib/plates.js';
+
+test('default lb set is the commercial gym set (no 35 lb plate)', () => {
+  assert.deepEqual(DEFAULT_PLATES.lb, [45, 25, 10, 5, 2.5]);
+  assert.deepEqual(asList(solve({ target: 300, bar: 45, plates: DEFAULT_PLATES.lb })), [[45, 2], [25, 1], [10, 1], [2.5, 1]]);
+  assert.ok(PRESETS.lb.some((p) => p.id === 'home' && p.plates.includes(35)));
+});
+test('exactHint names the plate that would make the target exact', () => {
+  assert.equal(exactHint({ target: 227.5, bar: 45, plates: DEFAULT_PLATES.lb, all: PLATES.lb }), 1.25);
+  assert.equal(exactHint({ target: 227, bar: 45, plates: DEFAULT_PLATES.lb, all: PLATES.lb }), null);
+  assert.equal(exactHint({ target: 225, bar: 45, plates: DEFAULT_PLATES.lb, all: PLATES.lb }), null);
+});
+test('resultText for exact, closest and bar', () => {
+  assert.equal(resultText(solve({ target: 225, bar: 45, plates: DEFAULT_PLATES.lb }), 'lb', 45), '225 lb: 45 x 2 per side (45 lb bar)');
+  assert.match(resultText(solve({ target: 227, bar: 45, plates: DEFAULT_PLATES.lb }), 'lb', 45), /^227 lb is not possible .* Closest: 225 lb: 45 x 2 per side/);
+  assert.equal(resultText(solve({ target: 45, bar: 45, plates: DEFAULT_PLATES.lb }), 'lb', 45), '45 lb: the empty bar');
+});
+test('parsePercents', () => {
+  assert.deepEqual(parsePercents('40, 60, 80'), [40, 60, 80]);
+  assert.deepEqual(parsePercents('80 50 50%'), [50, 80]);
+  assert.equal(parsePercents('0, 50'), null);
+  assert.equal(parsePercents('abc'), null);
+  assert.equal(parsePercents('10,20,30,40,50,60,70').length, 5);
+});
+test('share query round trip and bad input', () => {
+  const q = toQuery({ target: 225, unit: 'lb', bar: 45, plates: [45, 25, 10, 5, 2.5], collar: 0 });
+  assert.equal(q, 'w=225&u=lb&bar=45&p=45,25,10,5,2.5');
+  assert.deepEqual(fromQuery(q), { unit: 'lb', target: 225, bar: 45, plates: [45, 25, 10, 5, 2.5] });
+  assert.deepEqual(fromQuery('?w=100&u=kg&bar=20&p=25,15,99&c=2.5'), { unit: 'kg', target: 100, bar: 20, collar: 2.5, plates: [25, 15] });
+  assert.deepEqual(fromQuery('?w=abc&u=stone&bar=-5&p=45'), {});
+  assert.equal(fromQuery('?w=999999').target, undefined);
+});

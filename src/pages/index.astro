@@ -6,6 +6,8 @@ import Article from '../components/Article.astro';
 import Faq from '../components/Faq.astro';
 import site from '../site.config.ts';
 import { faq } from '../data/faq.ts';
+import { loads, slugFor } from '../data/loads.ts';
+import { url } from '../lib/url.ts';
 
 const base = `https://${site.domain}`;
 const jsonLd = [
@@ -16,11 +18,22 @@ const jsonLd = [
     url: `${base}/`,
     description: site.description,
     applicationCategory: site.category,
-    featureList: 'lb and kg, bar presets, plate toggles, collars, closest weight, warm-up sets',
+    featureList: 'lb and kg, bar presets, plate sets, collars, nearest loads under and over, warm-up sets, copy result, share link',
     operatingSystem: 'Any',
     browserRequirements: 'Requires JavaScript',
     inLanguage: site.locale,
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'How to load a barbell',
+    step: [
+      { '@type': 'HowToStep', name: 'Subtract the bar', text: 'Take the bar weight away from the total you want, for example 45 lb from 225 lb.' },
+      { '@type': 'HowToStep', name: 'Divide by 2', text: 'Half of what is left goes on each side. 180 lb left means 90 lb a side.' },
+      { '@type': 'HowToStep', name: 'Load the heaviest plates first', text: 'Slide the biggest plates on first, against the shoulder of the bar, and the smallest last.' },
+      { '@type': 'HowToStep', name: 'Secure and match', text: 'Add a collar to each sleeve and check that both sides carry the same plates.' },
+    ],
   },
   {
     '@context': 'https://schema.org',
@@ -42,6 +55,17 @@ const jsonLd = [
     <div class="mt-5 min-h-[44rem] sm:mt-8 md:min-h-[34rem]"><Tool /></div>
     <AdSlot />
   </section>
+  <section aria-labelledby="loads-h" class="mx-auto max-w-5xl px-4 pt-16">
+    <h2 id="loads-h" class="text-2xl font-bold tracking-tight">Plates for common loads</h2>
+    <p class="mt-2 max-w-2xl text-muted">Each page shows the plates per side, other bars and plate sets, and a warm-up ramp for one weight.</p>
+    <div class="mt-4 flex flex-wrap gap-2">
+      {loads.map((l) => <a href={url(`${slugFor(l)}/`)} class="load-pill">{l.weight} {l.unit}</a>)}
+    </div>
+  </section>
   <Article />
   <Faq />
 </Base>
+<style is:global>
+  .load-pill { display:inline-flex; min-height:2.75rem; align-items:center; padding:.25rem 1rem; border:1px solid var(--edge); border-radius:999px; font-weight:600; background:var(--card); }
+  .load-pill:hover { border-color: var(--brand); }
+</style>

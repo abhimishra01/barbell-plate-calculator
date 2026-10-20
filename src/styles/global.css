@@ -55,3 +55,11 @@ body { background: var(--paper); color: var(--ink); font-family: var(--font-sans
 .prose-site li { margin-bottom: 0.35rem; }
 .prose-site a { color: var(--brand-ink); text-decoration: underline; text-underline-offset: 3px; }
 .prose-site strong { font-weight: 650; }
+
+/* Tables in article text (home and load pages) */
+  .prose-site .table-wrap { overflow-x: auto; margin: 0 0 1.25rem; border: 1px solid var(--line); border-radius: .75rem; max-width: 28rem; }
+  .prose-site table { width: 100%; border-collapse: collapse; font-size: .975rem; }
+  .prose-site th, .prose-site td { text-align: left; padding: .5rem .85rem; }
+  .prose-site thead th { background: var(--brand-soft); color: var(--brand-ink); font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; }
+  .prose-site tbody tr + tr > * { border-top: 1px solid var(--line); }
+  .prose-site td:first-child { font-weight: 650; white-space: nowrap; font-variant-numeric: tabular-nums; }

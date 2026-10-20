@@ -1,0 +1,10 @@
+---
+import LoadPage from '../../components/LoadPage.astro';
+import { loads, slugFor } from '../../data/loads.ts';
+
+export function getStaticPaths() {
+  return loads.map((load) => ({ params: { slug: slugFor(load) }, props: { load } }));
+}
+const { load } = Astro.props;
+---
+<LoadPage load={load} />

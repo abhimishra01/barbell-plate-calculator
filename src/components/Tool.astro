@@ -1,7 +1,10 @@
 ---
 // Barbell plate calculator UI. Logic lives in src/lib/plates.js (tested by npm test).
+// A load page passes target and unit: the tool then starts from that load with default bar and plates.
+interface Props { target?: number; unit?: 'lb' | 'kg'; }
+const { target, unit } = Astro.props;
 ---
-<section id="tool" aria-label="Plate calculator" class="rounded-2xl border border-line bg-card p-4 sm:p-6 sm:shadow-[6px_6px_0_0_var(--line)]">
+<section id="tool" aria-label="Plate calculator" data-target={target} data-unit={unit} class="rounded-2xl border border-line bg-card p-4 sm:p-6 sm:shadow-[6px_6px_0_0_var(--line)]">
   <noscript><p class="mb-4 rounded-xl bg-brand-soft p-3 text-sm">This calculator needs JavaScript. The tables below list common loads you can read without it.</p></noscript>
   <div class="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-start md:gap-8">
 
@@ -42,7 +45,8 @@
 
         <fieldset>
           <legend class="mb-1 text-sm font-semibold">Plates you have</legend>
-          <p class="mb-2 text-sm text-muted">Tap to turn a plate off if your gym does not have it.</p>
+          <p class="mb-2 text-sm text-muted">Pick a set, or tap a plate to turn it off if your gym does not have it.</p>
+          <div id="preset-group" class="mb-2 flex flex-wrap gap-2" role="group" aria-label="Plate sets"></div>
           <div id="plate-group" class="flex flex-wrap gap-2"></div>
         </fieldset>
 
@@ -67,8 +71,15 @@
       <div class="min-h-[12rem] rounded-xl bg-brand-soft p-4" id="result-box">
         <p class="text-sm font-semibold uppercase tracking-wide text-brand-ink">Load on each side</p>
         <div id="side-list" class="mt-2 flex min-h-[3rem] flex-wrap items-center gap-2"></div>
-        <p id="result-status" role="status" aria-live="polite" class="mt-3 min-h-[3rem] text-base font-medium"></p>
-        <div id="alts" class="mt-2 flex min-h-[2.75rem] flex-wrap gap-2"></div>
+        <p id="total-line" class="mt-2 min-h-[1.5rem] font-mono text-sm font-semibold tabular-nums"></p>
+        <p id="result-status" role="status" aria-live="polite" class="mt-1 min-h-[3rem] text-base font-medium"></p>
+        <p id="hint" class="min-h-[1.25rem] text-sm text-brand-ink"></p>
+        <div id="alts" class="mt-2 grid min-h-[3.5rem] gap-2 sm:grid-cols-2"></div>
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+          <button type="button" id="copy-result" class="alt-btn">Copy result</button>
+          <button type="button" id="copy-link" class="alt-btn">Copy link</button>
+          <span id="copy-status" role="status" aria-live="polite" class="text-sm font-medium text-brand-ink"></span>
+        </div>
       </div>
 
       <figure class="mt-4">
@@ -78,10 +89,19 @@
         <figcaption class="mt-1 text-xs text-muted">One side shown. Load the other side the same way. Put the heaviest plates on first, against the bar shoulder. The collar goes on last. Colors follow competition plates, so yours may look different.</figcaption>
       </figure>
 
-      <h2 class="mt-5 text-sm font-semibold">Warm-up sets</h2>
+      <div class="mt-5 flex flex-wrap items-end justify-between gap-2">
+        <h2 class="text-sm font-semibold">Warm-up sets</h2>
+        <div class="flex flex-wrap items-center gap-2">
+          <label for="pct" class="text-sm text-muted">Percents</label>
+          <input id="pct" type="text" inputmode="decimal" autocomplete="off" value="40, 60, 80" aria-describedby="pct-help"
+            class="h-11 w-32 rounded-xl border border-edge bg-paper px-3 text-center font-mono text-base font-semibold tabular-nums outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 aria-[invalid=true]:border-red-600" />
+          <button type="button" id="copy-warm" class="alt-btn">Copy warm-up</button>
+        </div>
+      </div>
+      <p id="pct-help" class="sr-only">Up to five percents from 5 to 95, separated by commas.</p>
       <div class="mt-2 overflow-x-auto rounded-xl border border-line">
         <table class="w-full min-w-[20rem] text-left text-sm">
-          <caption class="sr-only">Warm-up sets: the empty bar, then 40, 60 and 80 percent of the target weight, then the work set</caption>
+          <caption class="sr-only">Warm-up sets: the empty bar, then the chosen percents of the target weight, then the work set</caption>
           <thead class="bg-brand-soft text-xs uppercase tracking-wide text-brand-ink">
             <tr><th scope="col" class="px-3 py-2 font-semibold">Set</th><th scope="col" class="px-3 py-2 font-semibold">Weight</th><th scope="col" class="px-3 py-2 font-semibold">Each side</th></tr>
           </thead>
@@ -114,9 +134,15 @@
   .load-chip small { font-size:.85rem; font-weight:600; color:var(--muted); }
   .alt-btn { min-height:2.75rem; padding:.4rem .9rem; border-radius:.75rem; border:1px solid var(--brand); background:var(--card); font-weight:600; font-size:.95rem; color:var(--brand-ink); cursor:pointer; }
   .alt-btn:hover { background: var(--brand); color:#fff; }
+  .alt-card { display:flex; flex-direction:column; align-items:flex-start; gap:.1rem; min-height:3.5rem; padding:.5rem .9rem; border-radius:.75rem; border:1px solid var(--brand); background:var(--card); color:var(--ink); text-align:left; cursor:pointer; font-variant-numeric:tabular-nums; }
+  .alt-card strong { font-size:1.1rem; color:var(--brand-ink); }
+  .alt-card span { font-size:.85rem; color:var(--muted); }
+  .alt-card:hover { background: var(--brand-soft); }
+  .chip.preset { transition:none; }
+  :root[data-skin] .chip.preset[aria-pressed=true] { background: var(--brand); color:#fff; }
 </style>
 <script>
-  import { PLATES, DEFAULT_PLATES, BARS, STEP, MAX_TARGET, solve, warmups, convertTarget, parseNumber, describe, fmt } from '../lib/plates.js';
+  import { PLATES, PRESETS, DEFAULT_PLATES, BARS, STEP, MAX_TARGET, solve, warmups, convertTarget, convertWeight, parseNumber, parsePercents, describe, fmt, exactHint, resultText, toQuery, fromQuery } from '../lib/plates.js';
 
   type Unit = 'lb' | 'kg';
   type Side = { w: number; n: number }[];
@@ -132,7 +158,8 @@
   const QUICK: Record<Unit, number[]> = { lb: [95, 135, 185, 225, 275, 315, 405], kg: [60, 80, 100, 120, 140, 180] };
   const DEFAULT_CUSTOM: Record<Unit, number> = { lb: 25, kg: 10 };
   const DEFAULT_COLLAR: Record<Unit, number> = { lb: 1, kg: 2.5 };
-  const KEY = 'plate-calc-v2';
+  const KEY = 'plate-calc-v3';
+  const DEFAULT_PCT = [40, 60, 80];
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
   const show = (id: string, on: boolean) => { $(id).classList.toggle('hidden', !on); $(id).classList.toggle('flex', on); };
@@ -146,10 +173,15 @@
     plates: { lb: [...DEFAULT_PLATES.lb], kg: [...DEFAULT_PLATES.kg] } as Record<Unit, number[]>,
     collars: false,
     collarW: { ...DEFAULT_COLLAR } as Record<Unit, number>,
+    pct: [...DEFAULT_PCT],
   };
+  const root = $('tool');
+  const pageUnit = root.dataset.unit as Unit | undefined;
+  const pageTarget = Number(root.dataset.target);
 
+  // A load page starts clean: its own target, the default bar and the default plates. Saved settings load only on the home page.
   try {
-    const saved = JSON.parse(localStorage.getItem(KEY) || 'null');
+    const saved = pageUnit ? null : JSON.parse(localStorage.getItem(KEY) || 'null');
     if (saved && typeof saved === 'object') {
       if (saved.unit === 'lb' || saved.unit === 'kg') state.unit = saved.unit;
       if (isWeight(saved.target) && saved.target > 0 && saved.target <= MAX_TARGET) state.target = saved.target;
@@ -160,8 +192,22 @@
         if (saved.collarW && isWeight(saved.collarW[u])) state.collarW[u] = saved.collarW[u];
       }
       state.collars = saved.collars === true;
+      const pct = Array.isArray(saved.pct) ? parsePercents(saved.pct.join(',')) : null;
+      if (pct) state.pct = pct;
     }
   } catch {}
+  if (pageUnit && pageTarget > 0) { state.unit = pageUnit; state.target = pageTarget; }
+  // A share link (?w=225&u=lb&bar=45&p=45,25,10,5,2.5) wins over everything else.
+  const shared = fromQuery(location.search);
+  if (shared.unit) state.unit = shared.unit;
+  if (shared.target) state.target = shared.target;
+  if (shared.bar !== undefined) {
+    const u = state.unit;
+    if ((BARS[u] as number[]).includes(shared.bar)) state.bar[u] = String(shared.bar);
+    else { state.bar[u] = 'custom'; state.customBar[u] = shared.bar; }
+  }
+  if (shared.plates && shared.plates.length) state.plates[state.unit] = shared.plates;
+  if (shared.collar) { state.collars = true; state.collarW[state.unit] = shared.collar; }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 
   // The last number the person chose, so a unit round trip returns to it (135 lb, 60 kg, 135 lb).
@@ -190,6 +236,10 @@
     $('bar-group').innerHTML = bars.map((b) =>
       `<label class="seg"><input type="radio" name="bar" value="${b.id}" class="peer sr-only"${b.id === state.bar[u] ? ' checked' : ''} /><span class="seg-face">${b.label}</span></label>`).join('');
     show('custom-bar-wrap', state.bar[u] === 'custom');
+
+    $('preset-group').innerHTML = (PRESETS[u] as { id: string; label: string; plates: number[] }[]).map((p) =>
+      `<button type="button" class="chip preset" data-preset="${p.id}" aria-pressed="false">${p.label}</button>`).join('');
+    $<HTMLInputElement>('pct').value = state.pct.join(', ');
 
     $('plate-group').innerHTML = PLATES[u].map((w) => {
       const [bg] = COLORS[u][String(w)];
@@ -240,6 +290,8 @@
     $('bar-svg').setAttribute('aria-label', `Barbell with ${desc} on each side`);
   }
 
+  let current: { text: string; r: any } | null = null;
+  let warmText = '';
   const cell = (html: string, cls = '') => `<td class="px-3 py-2.5 tabular-nums ${cls}">${html}</td>`;
   const row = (label: string, weight: string, side: string) =>
     `<tr><th scope="row" class="px-3 py-2.5 font-semibold">${label}</th>${cell(weight, 'font-mono')}${cell(side)}</tr>`;
@@ -253,7 +305,14 @@
     const status = $('result-status');
     const alts = $('alts');
     alts.innerHTML = '';
+    $('hint').textContent = '';
+    $('total-line').textContent = '';
     $('warm-note').textContent = '';
+    current = null;
+    document.querySelectorAll<HTMLElement>('.preset').forEach((b) => {
+      const set = (PRESETS[u] as { id: string; plates: number[] }[]).find((p) => p.id === b.dataset.preset)!.plates;
+      b.setAttribute('aria-pressed', String(set.length === plates.length && set.every((w) => plates.includes(w))));
+    });
 
     // A blank or invalid bar or collar field must not hide behind an old value.
     const badField = !Number.isFinite(bar) || (state.collars && !Number.isFinite(collar));
@@ -283,10 +342,21 @@
       status.textContent = plates.length
         ? `Cannot hit ${fmt(target)} ${u} exactly. Closest load is ${fmt(r.total)} ${u} with a ${fmt(bar)} ${u} bar${withCollars}.${onEach}`
         : 'Turn on at least one plate size to load the bar.';
-      const mk = (t: number, label: string) => `<button type="button" class="alt-btn" data-w="${t}">${label} ${fmt(t)} ${u}</button>`;
-      if (r.lower.total !== r.total && r.lower.total > r.base) alts.innerHTML += mk(r.lower.total, 'Go lighter:');
-      if (r.upper.total !== r.total) alts.innerHTML += mk(r.upper.total, 'Go heavier:');
+      // Two cards: the nearest load under the target and the nearest over it. Tap one to use it.
+      const mk = (x: { total: number; list: Side }, word: string) =>
+        `<button type="button" class="alt-card" data-w="${x.total}"><strong>${fmt(x.total)} ${u}</strong><span>${fmt(Math.abs(x.total - target))} ${u} ${word}${x.list.length ? ': ' + describe(x.list) : ''}</span></button>`;
+      if (plates.length) {
+        if (r.lower.total > r.base) alts.innerHTML += mk(r.lower, 'under');
+        alts.innerHTML += mk(r.upper, 'over');
+        const hintPlate = exactHint({ target, bar, collar, plates, all: PLATES[u] });
+        if (hintPlate !== null) $('hint').textContent = `Turn on the ${fmt(hintPlate)} ${u} plate to reach ${fmt(target)} ${u} exactly.`;
+      }
     }
+    if (r.status === 'exact' || r.status === 'closest' || r.status === 'bar') {
+      const other: Unit = u === 'lb' ? 'kg' : 'lb';
+      $('total-line').textContent = `${fmt(r.total)} ${u} = ${fmt(Math.round(convertWeight(r.total, u, other) * 10) / 10)} ${other}`;
+    }
+    current = { text: resultText(r, u, bar), r };
     if (list.length && r.plateCount > 10) status.textContent += ` That is ${r.plateCount} plates a side. Check they fit on the sleeve.`;
 
     drawBar(list, state.collars);
@@ -299,7 +369,10 @@
       if (ramp && x.total !== x.want) rounded = true;
       return row(label, `${fmt(x.total)} ${u}`, x.list.map((p: { w: number; n: number }) => `${fmt(p.w)}${p.n > 1 ? `&times;${p.n}` : ''}`).join(' + '));
     };
-    const ramp = warmups({ target, bar, collar, plates, percents: [40, 60, 80], step: STEP[u] }) as any[];
+    const ramp = warmups({ target, bar, collar, plates, percents: state.pct, step: STEP[u] }) as any[];
+    warmText = [`Warm-up for ${fmt(target)} ${u} (${fmt(bar)} ${u} bar):`, `Empty bar: ${fmt(r.base)} ${u}`,
+      ...ramp.map((x) => `${x.pct}%: ${x.list ? `${fmt(x.total)} ${u}, ${x.list.length ? describe(x.list) + ' per side' : 'bar only'}` : '-'}`),
+      `Work set: ${fmt(r.total || 0)} ${u}${list.length ? ', ' + describe(list) + ' per side' : ''}`].join('\n');
     $('warm').innerHTML = [
       target > 0 ? row('Empty bar', `${fmt(r.base)} ${u}`, 'Bar only') : row('Empty bar', '-', '-'),
       ...ramp.map((x) => warmRow(`${x.pct}%`, x)),
@@ -380,6 +453,48 @@
     state.collars = (e.target as HTMLInputElement).checked;
     show('collar-wrap', state.collars);
     render();
+  });
+
+  $('preset-group').addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest('button[data-preset]') as HTMLElement | null;
+    if (!b) return;
+    const set = (PRESETS[state.unit] as { id: string; plates: number[] }[]).find((p) => p.id === b.dataset.preset)!.plates;
+    state.plates[state.unit] = [...set];
+    document.querySelectorAll<HTMLInputElement>('input[name=plate]').forEach((i) => { i.checked = set.includes(Number(i.value)); });
+    render();
+  });
+
+  const pctEl = $<HTMLInputElement>('pct');
+  pctEl.addEventListener('input', () => {
+    const v = parsePercents(pctEl.value);
+    pctEl.setAttribute('aria-invalid', String(v === null));
+    if (v) { state.pct = v; render(); }
+  });
+  pctEl.addEventListener('blur', () => { pctEl.value = state.pct.join(', '); pctEl.removeAttribute('aria-invalid'); });
+
+  // Copy buttons. Falls back to a hidden textarea where the clipboard API is missing.
+  let copyTimer = 0;
+  async function copy(text: string, what: string) {
+    if (!text) return;
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch {
+      const t = document.createElement('textarea');
+      t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select();
+      try { ok = document.execCommand('copy'); } catch {}
+      t.remove();
+    }
+    const el = $('copy-status');
+    el.textContent = ok ? `${what} copied.` : 'Copy is not available in this browser.';
+    clearTimeout(copyTimer);
+    copyTimer = window.setTimeout(() => { el.textContent = ''; }, 2500);
+  }
+  $('copy-result').addEventListener('click', () => copy(current?.text || '', 'Result'));
+  $('copy-warm').addEventListener('click', () => copy(warmText, 'Warm-up'));
+  $('copy-link').addEventListener('click', () => {
+    const u = state.unit;
+    const link = `${location.origin}${location.pathname}?${toQuery({ target: state.target, unit: u, bar: barWeight(), plates: state.plates[u], collar: state.collars ? state.collarW[u] : 0 })}`;
+    copy(link, 'Link');
   });
 
   buildStatic();

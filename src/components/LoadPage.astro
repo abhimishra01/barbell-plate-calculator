@@ -1,0 +1,134 @@
+---
+// One pre-rendered page per common barbell load. Plates, tables and answers are computed here with the same code as the tool.
+import Base from '../layouts/Base.astro';
+import Tool from './Tool.astro';
+import AdSlot from './AdSlot.astro';
+import site from '../site.config.ts';
+import { url } from '../lib/url.ts';
+import { loads, slugFor, type Load } from '../data/loads.ts';
+import { solve, warmups, describe, fmt, PRESETS, BARS, STEP, convertWeight } from '../lib/plates.js';
+
+interface Props { load: Load; }
+const { load } = Astro.props;
+const { unit, weight } = load;
+const other = unit === 'lb' ? 'kg' : 'lb';
+const [bar, altBar] = BARS[unit] as number[];
+const gym = PRESETS[unit][0].plates as number[];
+const home = (PRESETS[unit].find((p) => p.id === 'home') ?? PRESETS[unit][1]).plates as number[];
+const collarW = unit === 'lb' ? 1 : 2.5;
+const collarName = unit === 'lb' ? '1 lb spring collars' : '2.5 kg competition collars';
+const otherUnitWeight = Math.round(convertWeight(weight, unit, other) * 10) / 10;
+
+const main = solve({ target: weight, bar, plates: gym });
+const perSide = (weight - bar) / 2;
+const platesWord = (list: { w: number; n: number }[]) => list.map((p) => `${p.n === 1 ? 'one' : p.n === 2 ? 'two' : p.n === 3 ? 'three' : p.n === 4 ? 'four' : p.n} ${fmt(p.w)} ${unit} plate${p.n > 1 ? 's' : ''}`).join(' and ');
+
+// Variants: same target, different bar, plate set or collars.
+const variants = [
+  { label: `${bar} ${unit} bar, ${PRESETS[unit][0].label.toLowerCase()}`, r: solve({ target: weight, bar, plates: gym }) },
+  { label: `${bar} ${unit} bar, ${unit === 'lb' ? 'home set with 35 lb plates' : 'home set'}`, r: solve({ target: weight, bar, plates: home }) },
+  { label: `${altBar} ${unit} bar, ${PRESETS[unit][0].label.toLowerCase()}`, r: solve({ target: weight, bar: altBar, plates: gym }) },
+  { label: `${bar} ${unit} bar with ${collarName}`, r: solve({ target: weight, bar, collar: collarW, plates: gym }) },
+];
+const cellText = (r: any) => {
+  if (r.status === 'exact') return { total: `${fmt(r.total)} ${unit}`, side: describe(r.list), note: 'Exact' };
+  if (r.status === 'closest') return { total: `${fmt(r.total)} ${unit}`, side: describe(r.list), note: `Closest (${fmt(Math.abs(r.total - weight))} ${unit} ${r.total < weight ? 'under' : 'over'})` };
+  return { total: `${fmt(r.total ?? 0)} ${unit}`, side: 'Bar only', note: '' };
+};
+
+const ramp = warmups({ target: weight, bar, plates: gym, percents: [40, 60, 80], step: STEP[unit] });
+const warmRows = [
+  { label: 'Empty bar', total: `${fmt(bar)} ${unit}`, side: 'Bar only' },
+  ...ramp.map((x: any) => ({ label: `${x.pct}%`, total: `${fmt(x.total)} ${unit}`, side: x.list?.length ? x.list.map((p: any) => `${fmt(p.w)}${p.n > 1 ? ` x ${p.n}` : ''}`).join(' + ') : 'Bar only' })),
+  { label: 'Work set', total: `${fmt(main.total)} ${unit}`, side: main.list.map((p: any) => `${fmt(p.w)}${p.n > 1 ? ` x ${p.n}` : ''}`).join(' + ') },
+];
+
+const siblings = loads.filter((l) => l.unit === unit && l.weight !== weight);
+const title = `${weight} ${unit} Barbell: Plates Per Side`;
+const description = `To load ${weight} ${unit} on a ${bar} ${unit} bar, put ${describe(main.list).replace(/ x /g, ' x ')} on each side. Includes a warm-up ramp and other plate sets.`;
+const faq = [
+  { q: `How many plates do I need for ${weight} ${unit}?`, a: `With a ${bar} ${unit} bar you need ${fmt(perSide)} ${unit} on each side: ${platesWord(main.list)}. That is ${main.list.reduce((a: number, p: any) => a + p.n, 0) * 2} plates on the bar.` },
+  { q: `How much is ${weight} ${unit} in ${other}?`, a: `${weight} ${unit} is ${fmt(otherUnitWeight)} ${other}. If your gym uses ${other} plates, switch the unit in the calculator and it picks a nearby load for you.` },
+];
+const base = `https://${site.domain}`;
+const jsonLd = [
+  { '@context': 'https://schema.org', '@type': 'HowTo', name: `How to load ${weight} ${unit} on a barbell`,
+    step: [
+      { '@type': 'HowToStep', name: 'Take off the bar', text: `Subtract the ${bar} ${unit} bar from ${weight} ${unit}. That leaves ${fmt(weight - bar)} ${unit}.` },
+      { '@type': 'HowToStep', name: 'Split it in two', text: `Divide by 2. Each side carries ${fmt(perSide)} ${unit}.` },
+      { '@type': 'HowToStep', name: 'Load the heaviest plates first', text: `Put ${platesWord(main.list)} on each side, heaviest against the bar shoulder.` },
+      { '@type': 'HowToStep', name: 'Secure the plates', text: 'Add a collar to each sleeve and check that both sides match.' },
+    ] },
+  { '@type': 'FAQPage', '@context': 'https://schema.org', mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })) },
+  { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: [
+    { '@type': 'ListItem', position: 1, name: site.name, item: `${base}/` },
+    { '@type': 'ListItem', position: 2, name: title, item: `${base}/${slugFor(load)}/` },
+  ] },
+];
+---
+<Base title={title} description={description} jsonLd={jsonLd}>
+  <section class="mx-auto max-w-5xl px-4 pt-10 sm:pt-16">
+    <p class="text-sm"><a href={url('')} class="text-muted underline-offset-4 hover:underline">&larr; Barbell plate calculator</a></p>
+    <h1 class="mt-2 max-w-3xl text-3xl font-extrabold leading-[1.05] tracking-tight [text-wrap:balance] sm:text-5xl">
+      {weight} {unit} barbell: plates per side
+    </h1>
+    <p class="mt-4 max-w-2xl text-lg"><strong>{describe(main.list)}</strong> on each side of a {bar} {unit} bar makes {weight} {unit} ({fmt(otherUnitWeight)} {other}). Change anything below and the answer updates.</p>
+    <div class="mt-5 min-h-[44rem] sm:mt-8 md:min-h-[34rem]"><Tool target={weight} unit={unit} /></div>
+    <AdSlot />
+  </section>
+
+  <section class="mx-auto max-w-5xl px-4 pt-16">
+    <article class="prose-site">
+      <h2 style="margin-top:0">How to load {weight} {unit}</h2>
+      <p>{load.intro}</p>
+      <ol>
+        <li>Subtract the bar. {weight} {unit} minus {bar} {unit} is {fmt(weight - bar)} {unit}.</li>
+        <li>Divide by 2. Each side carries {fmt(perSide)} {unit}.</li>
+        <li>Load {platesWord(main.list)} on each side. Put the heaviest plate against the shoulder of the bar.</li>
+        <li>Add a collar to each sleeve and check that both sides look the same.</li>
+      </ol>
+      <p>{load.who}</p>
+
+      <h2>{weight} {unit} with other bars and plate sets</h2>
+      <p>Your gym may use a different bar or may not own every plate. This table shows what changes.</p>
+      <div class="table-wrap wide">
+        <table>
+          <thead><tr><th scope="col">Setup</th><th scope="col">Total</th><th scope="col">Each side</th><th scope="col">Result</th></tr></thead>
+          <tbody>
+            {variants.map((v) => { const c = cellText(v.r); return <tr><th scope="row">{v.label}</th><td>{c.total}</td><td>{c.side}</td><td>{c.note}</td></tr>; })}
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Warm-up sets for {weight} {unit}</h2>
+      <p>This ramp uses a {bar} {unit} bar and the {PRESETS[unit][0].label.toLowerCase()} plate set. Each warm-up is rounded to {STEP[unit]} {unit}, then to a load those plates can make. Change the percents in the calculator above to build your own ramp.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">Set</th><th scope="col">Weight</th><th scope="col">Each side</th></tr></thead>
+          <tbody>{warmRows.map((w) => <tr><th scope="row">{w.label}</th><td>{w.total}</td><td>{w.side}</td></tr>)}</tbody>
+        </table>
+      </div>
+
+      <h2>A tip for {weight} {unit}</h2>
+      <p>{load.tip}</p>
+
+      <h2>Questions about {weight} {unit}</h2>
+      {faq.map((f) => <><h3>{f.q}</h3><p>{f.a}</p></>)}
+
+      <h2>Other common loads in {unit === 'lb' ? 'pounds' : 'kilograms'}</h2>
+      <p class="load-links">
+        {siblings.map((l) => <a href={url(`${slugFor(l)}/`)}>{l.weight} {l.unit}</a>)}
+      </p>
+      <p><a href="#tool">Back to the calculator</a></p>
+    </article>
+  </section>
+</Base>
+<style is:global>
+  .prose-site th[scope=row] { text-align: left; padding: .5rem .85rem; font-weight: 650; }
+  .prose-site .table-wrap.wide { max-width: 44rem; }
+  .prose-site .table-wrap.wide table { min-width: 34rem; }
+  .prose-site td { white-space: nowrap; }
+  .prose-site .load-links { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .prose-site .load-links a { display: inline-flex; min-height: 2.75rem; align-items: center; padding: .25rem .9rem; border: 1px solid var(--edge); border-radius: 999px; font-weight: 600; text-decoration: none; }
+  .prose-site .load-links a:hover { border-color: var(--brand); }
+</style>

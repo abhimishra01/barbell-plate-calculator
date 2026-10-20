@@ -3,10 +3,23 @@ export const PLATES = {
   lb: [45, 35, 25, 10, 5, 2.5, 1.25],
   kg: [25, 20, 15, 10, 5, 2.5, 1.25],
 };
-// Plates that start switched on. Few US gyms own 1.25 lb plates.
+// Plate sets the person can pick in one tap. The first set in each unit is the default.
+export const PRESETS = {
+  lb: [
+    { id: 'gym', label: 'Commercial gym', plates: [45, 25, 10, 5, 2.5] },
+    { id: 'home', label: 'Home set', plates: [45, 35, 25, 10, 5, 2.5] },
+    { id: 'all', label: 'All plates', plates: [...PLATES.lb] },
+  ],
+  kg: [
+    { id: 'comp', label: 'Competition', plates: [...PLATES.kg] },
+    { id: 'gym', label: 'Gym (no 1.25)', plates: [25, 20, 15, 10, 5, 2.5] },
+    { id: 'home', label: 'Home set', plates: [20, 10, 5, 2.5, 1.25] },
+  ],
+};
+// Plates that start switched on. Few US gyms own 1.25 lb plates or 35 lb plates.
 export const DEFAULT_PLATES = {
-  lb: [45, 35, 25, 10, 5, 2.5],
-  kg: [...PLATES.kg],
+  lb: [...PRESETS.lb[0].plates],
+  kg: [...PRESETS.kg[0].plates],
 };
 // Preset bar weights. The bar id in the UI is the weight as a string, or 'custom'.
 export const BARS = { lb: [45, 35], kg: [20, 15] };
@@ -122,4 +135,53 @@ export function parseNumber(text) {
 // "45 x 2, 10 x 1" for one side.
 export function describe(list) {
   return list.map((p) => `${fmt(p.w)} x ${p.n}`).join(', ');
+}
+
+// When the target is not exact, find the smallest switched-off plate that would make it exact. Returns its weight or null.
+export function exactHint({ target, bar, collar = 0, plates, all }) {
+  if (solve({ target, bar, collar, plates }).status !== 'closest') return null;
+  for (const p of [...all].sort((a, b) => a - b)) {
+    if (plates.includes(p)) continue;
+    if (solve({ target, bar, collar, plates: [...plates, p] }).status === 'exact') return p;
+  }
+  return null;
+}
+
+// Plain text for the Copy button. r is the result of solve().
+export function resultText(r, unit, bar) {
+  if (r.status === 'bar') return `${fmt(r.total)} ${unit}: the empty bar`;
+  if (r.status !== 'exact' && r.status !== 'closest') return '';
+  const body = `${fmt(r.total)} ${unit}: ${describe(r.list)} per side (${fmt(bar)} ${unit} bar)`;
+  return r.status === 'exact' ? body : `${fmt(r.target)} ${unit} is not possible with these plates. Closest: ${body}`;
+}
+
+// Read a list of warm-up percents such as "40, 60, 80". Returns null if nothing usable. Keeps at most 5, sorted, from 5 to 95.
+export function parsePercents(text) {
+  const nums = String(text).split(/[\s,;]+/).filter(Boolean).map((t) => Number(t.replace('%', '')));
+  if (!nums.length || nums.some((n) => !Number.isFinite(n) || n < 5 || n > 95)) return null;
+  return [...new Set(nums.map((n) => Math.round(n)))].sort((a, b) => a - b).slice(0, 5);
+}
+
+// Share link query: ?w=225&u=lb&bar=45&p=45,25,10,5,2.5 (c = weight of one collar, only when collars are on).
+export function toQuery({ target, unit, bar, plates, collar = 0 }) {
+  let q = `w=${fmt(target)}&u=${unit}&bar=${fmt(bar)}&p=${plates.map(fmt).join(',')}`;
+  if (collar > 0) q += `&c=${fmt(collar)}`;
+  return q;
+}
+
+// Read a share link query. Returns only the fields that are valid.
+export function fromQuery(text) {
+  const q = new URLSearchParams(String(text).replace(/^\?/, ''));
+  const out = {};
+  const num = (v, min) => { const n = parseNumber(v ?? ''); return Number.isFinite(n) && n >= min && n <= MAX_TARGET ? n : null; };
+  const unit = q.get('u') === 'kg' ? 'kg' : q.get('u') === 'lb' ? 'lb' : null;
+  if (unit) out.unit = unit;
+  const w = num(q.get('w'), 0.01); if (w !== null) out.target = w;
+  const bar = num(q.get('bar'), 0); if (bar !== null) out.bar = bar;
+  const c = num(q.get('c'), 0.01); if (c !== null) out.collar = c;
+  if (q.has('p') && unit) {
+    out.plates = q.get('p').split(',').map(Number).filter((n) => PLATES[unit].includes(n));
+    out.plates = [...new Set(out.plates)];
+  }
+  return out;
 }
