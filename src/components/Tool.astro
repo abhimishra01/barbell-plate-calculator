@@ -4,13 +4,21 @@
 interface Props { target?: number; unit?: 'lb' | 'kg'; }
 const { target, unit } = Astro.props;
 ---
-<section id="tool" aria-label="Plate calculator" data-target={target} data-unit={unit} class="rounded-2xl border border-line bg-card p-4 sm:p-6 sm:shadow-[6px_6px_0_0_var(--line)]">
+<section id="tool" aria-label="Plate calculator" data-target={target} data-unit={unit} data-mode="plan" class="rounded-2xl border border-line bg-card p-4 sm:p-6 sm:shadow-[6px_6px_0_0_var(--line)]">
   <noscript><p class="mb-4 rounded-xl bg-brand-soft p-3 text-sm">This calculator needs JavaScript. The tables below list common loads you can read without it.</p></noscript>
-  <div class="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-start md:gap-8">
+  <div class="flex flex-col gap-6 md:grid md:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] md:items-start md:gap-x-8 md:gap-y-0">
 
-    <!-- Inputs. On a phone the weight comes first, then the result, then the settings. -->
-    <div class="contents md:block md:space-y-6">
+    <!-- Inputs. On a phone: mode and weight first, then the result, then the settings (bar, plates), then the warm-up table. -->
+    <div class="contents md:col-start-1 md:row-span-2 md:row-start-1 md:block md:space-y-6">
       <div class="order-1 space-y-5 md:order-none">
+        <fieldset>
+          <legend class="mb-2 text-sm font-semibold">What do you need?</legend>
+          <div class="grid grid-cols-2 gap-2" id="mode-group">
+            <label class="seg"><input type="radio" name="mode" value="plan" class="peer sr-only" checked /><span class="seg-face">Find the plates</span></label>
+            <label class="seg"><input type="radio" name="mode" value="count" class="peer sr-only" /><span class="seg-face">Count a loaded bar</span></label>
+          </div>
+        </fieldset>
+
         <fieldset>
           <legend class="mb-2 text-sm font-semibold">Units</legend>
           <div class="grid grid-cols-2 gap-2" id="unit-group">
@@ -19,7 +27,14 @@ const { target, unit } = Astro.props;
           </div>
         </fieldset>
 
-        <div>
+        <div id="count-panel" class="only-count">
+          <p class="mb-1 text-sm font-semibold">Plates on one side of the bar</p>
+          <p class="mb-2 text-sm text-muted">Tap + for each plate on one side. Both sides should match. The total includes the bar.</p>
+          <div id="count-group" class="grid gap-2 sm:grid-cols-2"></div>
+          <button type="button" id="count-clear" class="alt-btn mt-2">Clear plates</button>
+        </div>
+
+        <div class="only-plan">
           <label for="target" class="mb-2 block text-sm font-semibold">Target weight, bar included <span id="unit-label" class="font-normal text-muted">(lb)</span></label>
           <div class="flex items-stretch gap-2">
             <button type="button" id="dec" class="step" aria-label="Subtract one step from the target weight">&minus;</button>
@@ -34,7 +49,8 @@ const { target, unit } = Astro.props;
       <div class="order-3 space-y-5 md:order-none">
         <fieldset>
           <legend class="mb-2 text-sm font-semibold">Bar</legend>
-          <div class="flex flex-wrap gap-2" id="bar-group"></div>
+          <div id="bar-group"></div>
+          <p class="mt-1 text-xs text-muted">Bar weights are typical. Bars differ by maker, so check the label on yours or use Custom.</p>
           <div id="custom-bar-wrap" class="mt-2 hidden items-center gap-2">
             <label for="custom-bar" class="text-sm text-muted">Bar weight</label>
             <input id="custom-bar" type="text" inputmode="decimal" autocomplete="off" value="25"
@@ -43,11 +59,16 @@ const { target, unit } = Astro.props;
           </div>
         </fieldset>
 
-        <fieldset>
+        <fieldset class="only-plan">
           <legend class="mb-1 text-sm font-semibold">Plates you have</legend>
           <p class="mb-2 text-sm text-muted">Pick a set, or tap a plate to turn it off if your gym does not have it.</p>
           <div id="preset-group" class="mb-2 flex flex-wrap gap-2" role="group" aria-label="Plate sets"></div>
           <div id="plate-group" class="flex flex-wrap gap-2"></div>
+          <details id="limits" class="mt-3 rounded-xl border border-line px-3">
+            <summary class="flex min-h-12 cursor-pointer items-center text-sm font-semibold">How many plates do you own? (optional)</summary>
+            <p class="mb-2 text-sm text-muted">Enter pairs: one plate for each side. Leave a box empty if you have plenty.</p>
+            <div id="limit-group" class="grid grid-cols-2 gap-2 pb-3 sm:grid-cols-3"></div>
+          </details>
         </fieldset>
 
         <div>
@@ -67,7 +88,7 @@ const { target, unit } = Astro.props;
     </div>
 
     <!-- Result -->
-    <div class="order-2 min-w-0 md:order-none md:sticky md:top-20">
+    <div class="order-2 min-w-0 md:order-none md:col-start-2 md:row-start-1">
       <div class="min-h-[12rem] rounded-xl bg-brand-soft p-4" id="result-box">
         <p class="text-sm font-semibold uppercase tracking-wide text-brand-ink">Load on each side</p>
         <div id="side-list" class="mt-2 flex min-h-[3rem] flex-wrap items-center gap-2"></div>
@@ -77,7 +98,8 @@ const { target, unit } = Astro.props;
         <div id="alts" class="mt-2 grid min-h-[3.5rem] gap-2 sm:grid-cols-2"></div>
         <div class="mt-3 flex flex-wrap items-center gap-2">
           <button type="button" id="copy-result" class="alt-btn">Copy result</button>
-          <button type="button" id="copy-link" class="alt-btn">Copy link</button>
+          <button type="button" id="copy-link" class="alt-btn only-plan">Copy link</button>
+          <button type="button" id="print-card-btn" class="alt-btn">Print plate card</button>
           <span id="copy-status" role="status" aria-live="polite" class="text-sm font-medium text-brand-ink"></span>
         </div>
       </div>
@@ -89,7 +111,11 @@ const { target, unit } = Astro.props;
         <figcaption class="mt-1 text-xs text-muted">One side shown. Load the other side the same way. Put the heaviest plates on first, against the bar shoulder. The collar goes on last. Colors follow competition plates, so yours may look different.</figcaption>
       </figure>
 
-      <div class="mt-5 flex flex-wrap items-end justify-between gap-2">
+    </div>
+
+    <!-- Warm-up table: after the plate settings on a phone. -->
+    <div class="only-plan order-4 mt-1 min-w-0 md:order-none md:col-start-2 md:row-start-2 md:mt-5">
+      <div class="flex flex-wrap items-end justify-between gap-2">
         <h2 class="text-sm font-semibold">Warm-up sets</h2>
         <div class="flex flex-wrap items-center gap-2">
           <label for="pct" class="text-sm text-muted">Percents</label>
@@ -111,6 +137,7 @@ const { target, unit } = Astro.props;
       <p id="warm-note" class="mt-2 min-h-[1rem] text-xs text-muted"></p>
     </div>
   </div>
+  <div id="print-card" class="print-card" aria-hidden="true"></div>
 </section>
 
 <style is:global>
@@ -138,11 +165,34 @@ const { target, unit } = Astro.props;
   .alt-card strong { font-size:1.1rem; color:var(--brand-ink); }
   .alt-card span { font-size:.85rem; color:var(--muted); }
   .alt-card:hover { background: var(--brand-soft); }
+  #tool[data-mode=count] .only-plan { display:none !important; }
+  #tool:not([data-mode=count]) .only-count { display:none !important; }
+  .count-row { display:flex; align-items:center; gap:.5rem; min-height:3rem; border:1px solid var(--edge); border-radius:.75rem; background:var(--paper); padding:.25rem .4rem .25rem .7rem; font-weight:600; font-variant-numeric:tabular-nums; }
+  .count-row .dot, .limit-row .dot { width:1.25rem; height:1.25rem; border-radius:999px; border:2px solid rgba(0,0,0,.35); flex:none; }
+  .count-row .name { flex:1; }
+  .count-row output { min-width:1.75rem; text-align:center; font-family:ui-monospace,monospace; font-size:1.1rem; }
+  .count-row button { width:2.75rem; height:2.75rem; border-radius:.6rem; border:1px solid var(--edge); background:var(--card); font-size:1.4rem; font-weight:600; line-height:1; cursor:pointer; }
+  .count-row button:hover { border-color: var(--brand); }
+  .limit-row { display:flex; align-items:center; gap:.5rem; font-size:.9rem; font-weight:600; font-variant-numeric:tabular-nums; }
+  .limit-row input { height:2.75rem; width:4rem; min-width:0; border-radius:.6rem; border:1px solid var(--edge); background:var(--paper); text-align:center; font-family:ui-monospace,monospace; font-size:1rem; }
+  .bar-select { height:3rem; width:100%; border-radius:.75rem; border:1px solid var(--edge); background:var(--paper); padding:0 .75rem; font-weight:600; font-size:1rem; color:var(--ink); }
+  .print-card { display:none; }
+  @media print {
+    html.printing-card body > *:not(#print-card) { display:none !important; }
+    html.printing-card #print-card { display:block; color:#000; background:#fff; font-family:ui-sans-serif,system-ui,sans-serif; padding:0; }
+    #print-card h1 { font-size:2rem; margin:0 0 .25rem; }
+    #print-card .big { font-size:3rem; font-weight:800; margin:.25rem 0; }
+    #print-card .sub { font-size:1.1rem; margin:0 0 1rem; }
+    #print-card .side { font-size:1.6rem; font-weight:700; border:3px solid #000; padding:.75rem 1rem; margin:.5rem 0 1rem; }
+    #print-card table { border-collapse:collapse; width:100%; font-size:1.15rem; }
+    #print-card th, #print-card td { border:1px solid #000; padding:.4rem .6rem; text-align:left; }
+    #print-card .note { margin-top:1rem; font-size:.95rem; }
+  }
   .chip.preset { transition:none; }
   :root[data-skin] .chip.preset[aria-pressed=true] { background: var(--brand); color:#fff; }
 </style>
 <script>
-  import { PLATES, PRESETS, DEFAULT_PLATES, BARS, STEP, MAX_TARGET, solve, warmups, convertTarget, convertWeight, parseNumber, parsePercents, describe, fmt, exactHint, resultText, toQuery, fromQuery } from '../lib/plates.js';
+  import { PLATES, PRESETS, DEFAULT_PLATES, BAR_TYPES, STEP, MAX_TARGET, MAX_PAIRS, solve, warmups, convertTarget, convertWeight, parseNumber, parsePercents, describe, fmt, improveHint, countLoaded, countText, resultText, toQuery, fromQuery } from '../lib/plates.js';
 
   type Unit = 'lb' | 'kg';
   type Side = { w: number; n: number }[];
@@ -159,6 +209,9 @@ const { target, unit } = Astro.props;
   const DEFAULT_CUSTOM: Record<Unit, number> = { lb: 25, kg: 10 };
   const DEFAULT_COLLAR: Record<Unit, number> = { lb: 1, kg: 2.5 };
   const KEY = 'plate-calc-v3';
+  const MAX_COUNT = 20;
+  type Mode = 'plan' | 'count';
+  const barWeights = (u: Unit) => BAR_TYPES[u].map((b: { w: number }) => b.w);
   const DEFAULT_PCT = [40, 60, 80];
 
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -174,6 +227,9 @@ const { target, unit } = Astro.props;
     collars: false,
     collarW: { ...DEFAULT_COLLAR } as Record<Unit, number>,
     pct: [...DEFAULT_PCT],
+    mode: 'plan' as Mode,
+    counts: { lb: {}, kg: {} } as Record<Unit, Record<string, number>>,
+    limits: { lb: {}, kg: {} } as Record<Unit, Record<string, number>>,
   };
   const root = $('tool');
   const pageUnit = root.dataset.unit as Unit | undefined;
@@ -186,12 +242,18 @@ const { target, unit } = Astro.props;
       if (saved.unit === 'lb' || saved.unit === 'kg') state.unit = saved.unit;
       if (isWeight(saved.target) && saved.target > 0 && saved.target <= MAX_TARGET) state.target = saved.target;
       for (const u of ['lb', 'kg'] as Unit[]) {
-        if (saved.bar && typeof saved.bar[u] === 'string' && (saved.bar[u] === 'custom' || (BARS[u] as number[]).map(String).includes(saved.bar[u]))) state.bar[u] = saved.bar[u];
+        if (saved.bar && typeof saved.bar[u] === 'string' && (saved.bar[u] === 'custom' || barWeights(u).map(String).includes(saved.bar[u]))) state.bar[u] = saved.bar[u];
         if (saved.customBar && isWeight(saved.customBar[u])) state.customBar[u] = saved.customBar[u];
         if (saved.plates && Array.isArray(saved.plates[u])) state.plates[u] = saved.plates[u].filter((w: unknown) => (PLATES[u] as number[]).includes(w as number));
         if (saved.collarW && isWeight(saved.collarW[u])) state.collarW[u] = saved.collarW[u];
+        const intIn = (v: unknown, max: number) => typeof v === 'number' && Number.isInteger(v) && v >= 0 && v <= max;
+        for (const [key, max] of [['counts', MAX_COUNT], ['limits', MAX_PAIRS]] as [string, number][]) {
+          const src = saved[key] && saved[key][u];
+          if (src && typeof src === 'object') for (const w of PLATES[u] as number[]) if (intIn(src[String(w)], max)) (state as any)[key][u][String(w)] = src[String(w)];
+        }
       }
       state.collars = saved.collars === true;
+      if (saved.mode === 'count') state.mode = 'count';
       const pct = Array.isArray(saved.pct) ? parsePercents(saved.pct.join(',')) : null;
       if (pct) state.pct = pct;
     }
@@ -203,10 +265,11 @@ const { target, unit } = Astro.props;
   if (shared.target) state.target = shared.target;
   if (shared.bar !== undefined) {
     const u = state.unit;
-    if ((BARS[u] as number[]).includes(shared.bar)) state.bar[u] = String(shared.bar);
+    if (barWeights(u).includes(shared.bar)) state.bar[u] = String(shared.bar);
     else { state.bar[u] = 'custom'; state.customBar[u] = shared.bar; }
   }
   if (shared.plates && shared.plates.length) state.plates[state.unit] = shared.plates;
+  if (shared.limits) state.limits[state.unit] = { ...shared.limits };
   if (shared.collar) { state.collars = true; state.collarW[state.unit] = shared.collar; }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} };
 
@@ -232,14 +295,27 @@ const { target, unit } = Astro.props;
 
     $('chips').innerHTML = QUICK[u].map((w) => `<button type="button" class="chip" data-w="${w}">${w}</button>`).join('');
 
-    const bars = [...(BARS[u] as number[]).map((w) => ({ id: String(w), label: `${w} ${u}` })), { id: 'custom', label: 'Custom' }];
-    $('bar-group').innerHTML = bars.map((b) =>
-      `<label class="seg"><input type="radio" name="bar" value="${b.id}" class="peer sr-only"${b.id === state.bar[u] ? ' checked' : ''} /><span class="seg-face">${b.label}</span></label>`).join('');
+    const bars = [...(BAR_TYPES[u] as { w: number; label: string }[]).map((b) => ({ id: String(b.w), label: `${b.label}, ${b.w} ${u}` })), { id: 'custom', label: 'Custom weight' }];
+    $('bar-group').innerHTML = `<label for="bar-select" class="sr-only">Bar type</label><select id="bar-select" class="bar-select">${bars.map((b) =>
+      `<option value="${b.id}"${b.id === state.bar[u] ? ' selected' : ''}>${b.label}</option>`).join('')}</select>`;
     show('custom-bar-wrap', state.bar[u] === 'custom');
 
     $('preset-group').innerHTML = (PRESETS[u] as { id: string; label: string; plates: number[] }[]).map((p) =>
       `<button type="button" class="chip preset" data-preset="${p.id}" aria-pressed="false">${p.label}</button>`).join('');
     $<HTMLInputElement>('pct').value = state.pct.join(', ');
+
+    (document.querySelector(`input[name=mode][value=${state.mode}]`) as HTMLInputElement).checked = true;
+    root.dataset.mode = state.mode;
+    $('count-group').innerHTML = PLATES[u].map((w) => {
+      const [bg] = COLORS[u][String(w)];
+      return `<div class="count-row"><span class="dot" style="background:${bg}"></span><span class="name">${fmt(w)} ${u}</span><button type="button" data-cw="${w}" data-d="-1" aria-label="Remove one ${fmt(w)} ${u} plate">&minus;</button><output data-cn="${w}" aria-live="polite">0</output><button type="button" data-cw="${w}" data-d="1" aria-label="Add one ${fmt(w)} ${u} plate">+</button></div>`;
+    }).join('');
+    $('limit-group').innerHTML = PLATES[u].map((w) => {
+      const [bg] = COLORS[u][String(w)];
+      const v = state.limits[u][String(w)];
+      return `<label class="limit-row"><span class="dot" style="background:${bg}"></span>${fmt(w)} ${u}<input type="text" inputmode="numeric" autocomplete="off" placeholder="Any" data-lw="${w}" value="${v === undefined ? '' : v}" aria-label="Pairs of ${fmt(w)} ${u} plates you own" /></label>`;
+    }).join('');
+    ($('limits') as HTMLDetailsElement).open = Object.keys(state.limits[u]).length > 0;
 
     $('plate-group').innerHTML = PLATES[u].map((w) => {
       const [bg] = COLORS[u][String(w)];
@@ -301,6 +377,7 @@ const { target, unit } = Astro.props;
     const bar = barWeight();
     const collar = state.collars ? state.collarW[u] : 0;
     const plates = state.plates[u];
+    const limits = state.limits[u];
     const target = state.target;
     const status = $('result-status');
     const alts = $('alts');
@@ -321,11 +398,13 @@ const { target, unit } = Astro.props;
       status.textContent = !Number.isFinite(bar) ? 'Enter the bar weight to see the plates.' : 'Enter the collar weight, or turn collars off.';
       drawBar([], false);
       $('warm').innerHTML = [0, 1, 2, 3, 4].map(() => row('-', '-', '-')).join('');
+      $('print-card').innerHTML = '';
       save();
       return;
     }
+    if (state.mode === 'count') { renderCount(u, bar, collar); return; }
 
-    const r: any = solve({ target, bar, collar, plates });
+    const r: any = solve({ target, bar, collar, plates, limits });
     const list: Side = r.list || [];
     const withCollars = collar ? ' and collars' : '';
 
@@ -347,9 +426,13 @@ const { target, unit } = Astro.props;
         `<button type="button" class="alt-card" data-w="${x.total}"><strong>${fmt(x.total)} ${u}</strong><span>${fmt(Math.abs(x.total - target))} ${u} ${word}${x.list.length ? ': ' + describe(x.list) : ''}</span></button>`;
       if (plates.length) {
         if (r.lower.total > r.base) alts.innerHTML += mk(r.lower, 'under');
-        alts.innerHTML += mk(r.upper, 'over');
-        const hintPlate = exactHint({ target, bar, collar, plates, all: PLATES[u] });
-        if (hintPlate !== null) $('hint').textContent = `Turn on the ${fmt(hintPlate)} ${u} plate to reach ${fmt(target)} ${u} exactly.`;
+        if (r.upper) alts.innerHTML += mk(r.upper, 'over');
+        const h = improveHint({ target, bar, collar, plates, limits, all: PLATES[u] });
+        if (h) {
+          $('hint').innerHTML = `Turn on ${fmt(h.plate)} ${u} plates to reach ${fmt(h.total)} ${u}${h.exact ? ' exactly' : ', closer to your target'}. <button type="button" class="alt-btn ml-1" data-hint-plate="${h.plate}">Turn on</button>`;
+        } else if (Object.keys(limits).some((w) => plates.includes(Number(w)))) {
+          status.textContent += ' Your plate counts may be the limit. Check "How many plates do you own?".';
+        }
       }
     }
     if (r.status === 'exact' || r.status === 'closest' || r.status === 'bar') {
@@ -360,6 +443,8 @@ const { target, unit } = Astro.props;
     if (list.length && r.plateCount > 10) status.textContent += ` That is ${r.plateCount} plates a side. Check they fit on the sleeve.`;
 
     drawBar(list, state.collars);
+    const ramp0 = warmups({ target, bar, collar, plates, limits, percents: state.pct, step: STEP[u] }) as any[];
+    printCard(`${fmt(target)} ${u}`, `${fmt(bar)} ${u} bar${collar ? ' and collars' : ''}`, list, r.total, ramp0);
 
     // Warm-ups: empty bar, then 40/60/80 percent rounded to a practical jump, then the work set.
     let rounded = false;
@@ -369,7 +454,7 @@ const { target, unit } = Astro.props;
       if (ramp && x.total !== x.want) rounded = true;
       return row(label, `${fmt(x.total)} ${u}`, x.list.map((p: { w: number; n: number }) => `${fmt(p.w)}${p.n > 1 ? `&times;${p.n}` : ''}`).join(' + '));
     };
-    const ramp = warmups({ target, bar, collar, plates, percents: state.pct, step: STEP[u] }) as any[];
+    const ramp = ramp0;
     warmText = [`Warm-up for ${fmt(target)} ${u} (${fmt(bar)} ${u} bar):`, `Empty bar: ${fmt(r.base)} ${u}`,
       ...ramp.map((x) => `${x.pct}%: ${x.list ? `${fmt(x.total)} ${u}, ${x.list.length ? describe(x.list) + ' per side' : 'bar only'}` : '-'}`),
       `Work set: ${fmt(r.total || 0)} ${u}${list.length ? ', ' + describe(list) + ' per side' : ''}`].join('\n');
@@ -379,6 +464,36 @@ const { target, unit } = Astro.props;
       warmRow('Work set', r, false),
     ].join('');
     if (rounded) $('warm-note').textContent = 'Warm-ups are rounded to loads your plates can make.';
+    save();
+  }
+
+  // Print card: one page with big text. Lives in <body> so print CSS can show it alone.
+  function printCard(title: string, sub: string, list: Side, total: number, ramp: any[] | null) {
+    const u = state.unit;
+    const side = list.length ? list.map((p) => `${fmt(p.w)} &times; ${p.n}`).join(' &nbsp;+&nbsp; ') : 'Empty bar';
+    const rows = ramp ? ramp.map((x) => `<tr><td>${x.pct}%</td><td>${x.list ? fmt(x.total) + ' ' + u : '-'}</td><td>${x.list && x.list.length ? x.list.map((p: { w: number; n: number }) => fmt(p.w) + (p.n > 1 ? '&times;' + p.n : '')).join(' + ') : 'Bar only'}</td></tr>`).join('') : '';
+    $('print-card').innerHTML = `<h1>Plates per side</h1><p class="big">${fmt(total)} ${u}</p><p class="sub">${title && title !== `${fmt(total)} ${u}` ? `Target ${title}. ` : ''}${sub}</p><p class="side">${side}</p>`
+      + (ramp ? `<table><thead><tr><th>Set</th><th>Weight</th><th>Each side</th></tr></thead><tbody>${rows}</tbody></table>` : '')
+      + '<p class="note">Load the heaviest plates first, against the bar shoulder. Load both sides the same.</p>';
+  }
+
+  // Reverse mode: add up the plates on one side.
+  function renderCount(u: Unit, bar: number, collar: number) {
+    const counts = (PLATES[u] as number[]).map((w) => ({ w, n: state.counts[u][String(w)] || 0 }));
+    const c = countLoaded({ bar, collar, counts });
+    const withCollars = collar ? ' and collars' : '';
+    document.querySelectorAll<HTMLElement>('output[data-cn]').forEach((o) => { o.textContent = String(state.counts[u][o.dataset.cn!] || 0); });
+    $('side-list').innerHTML = c.list.length
+      ? c.list.map((p: { w: number; n: number }) => { const [bg] = COLORS[u][fmt(p.w)]; return `<span class="load-chip"><span class="dot" style="background:${bg}"></span>${fmt(p.w)}<small>&times; ${p.n}</small></span>`; }).join('')
+      : '<span class="text-lg font-semibold">Empty bar</span>';
+    $('result-status').textContent = c.list.length
+      ? `Total ${fmt(c.total)} ${u} with a ${fmt(bar)} ${u} bar${withCollars}. You have ${describe(c.list)} on each side.${c.plateCount > 10 ? ` That is ${c.plateCount} plates a side. Check they fit on the sleeve.` : ''}`
+      : `${fmt(c.total)} ${u} is the bar${withCollars} alone. Tap + on a plate to add it to each side.`;
+    const other: Unit = u === 'lb' ? 'kg' : 'lb';
+    $('total-line').textContent = `${fmt(c.total)} ${u} = ${fmt(Math.round(convertWeight(c.total, u, other) * 10) / 10)} ${other}`;
+    current = { text: countText(c, u, bar), r: c };
+    drawBar(c.list, state.collars);
+    printCard('', `${fmt(bar)} ${u} bar${withCollars}`, c.list, c.total, null);
     save();
   }
 
@@ -413,6 +528,43 @@ const { target, unit } = Astro.props;
   $('inc').addEventListener('click', () => nudge(1));
   $('dec').addEventListener('click', () => nudge(-1));
   $('chips').addEventListener('click', pickWeight);
+  $('hint').addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest('button[data-hint-plate]') as HTMLElement | null;
+    if (!b) return;
+    const w = Number(b.dataset.hintPlate);
+    if (!state.plates[state.unit].includes(w)) state.plates[state.unit] = [...state.plates[state.unit], w];
+    const box = document.querySelector<HTMLInputElement>(`input[name=plate][value="${w}"]`);
+    if (box) box.checked = true;
+    render();
+  });
+  $('mode-group').addEventListener('change', (e) => {
+    state.mode = (e.target as HTMLInputElement).value === 'count' ? 'count' : 'plan';
+    root.dataset.mode = state.mode;
+    render();
+  });
+  $('count-group').addEventListener('click', (e) => {
+    const b = (e.target as HTMLElement).closest('button[data-cw]') as HTMLElement | null;
+    if (!b) return;
+    const key = b.dataset.cw!;
+    const n = Math.min(MAX_COUNT, Math.max(0, (state.counts[state.unit][key] || 0) + Number(b.dataset.d)));
+    state.counts[state.unit][key] = n;
+    render();
+  });
+  $('count-clear').addEventListener('click', () => { state.counts[state.unit] = {}; render(); });
+  $('limit-group').addEventListener('input', (e) => {
+    const el = e.target as HTMLInputElement;
+    const key = el.dataset.lw!;
+    const v = el.value.trim() === '' ? NaN : Number(el.value);
+    if (Number.isInteger(v) && v >= 0 && v <= MAX_PAIRS) { state.limits[state.unit][key] = v; el.removeAttribute('aria-invalid'); }
+    else { delete state.limits[state.unit][key]; if (el.value.trim() !== '') el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); }
+    render();
+  });
+  document.body.appendChild($('print-card'));
+  $('print-card-btn').addEventListener('click', () => {
+    document.documentElement.classList.add('printing-card');
+    window.print();
+  });
+  window.addEventListener('afterprint', () => document.documentElement.classList.remove('printing-card'));
   $('alts').addEventListener('click', pickWeight);
   $('unit-group').addEventListener('change', (e) => {
     const to = (e.target as HTMLInputElement).value as Unit;
@@ -493,7 +645,7 @@ const { target, unit } = Astro.props;
   $('copy-warm').addEventListener('click', () => copy(warmText, 'Warm-up'));
   $('copy-link').addEventListener('click', () => {
     const u = state.unit;
-    const link = `${location.origin}${location.pathname}?${toQuery({ target: state.target, unit: u, bar: barWeight(), plates: state.plates[u], collar: state.collars ? state.collarW[u] : 0 })}`;
+    const link = `${location.origin}${location.pathname}?${toQuery({ target: state.target, unit: u, bar: barWeight(), plates: state.plates[u], collar: state.collars ? state.collarW[u] : 0, limits: state.limits[u] })}`;
     copy(link, 'Link');
   });
 

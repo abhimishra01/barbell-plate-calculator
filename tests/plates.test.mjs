@@ -157,7 +157,7 @@ test('parseNumber: decimal comma, thousands comma, junk', () => {
   assert.ok(Number.isNaN(parseNumber('12abc')));
 });
 
-import { PRESETS, exactHint, resultText, parsePercents, toQuery, fromQuery } from '../src/lib/plates.js';
+import { BAR_TYPES, BARS, improveHint, countLoaded, countText, PRESETS, exactHint, resultText, parsePercents, toQuery, fromQuery } from '../src/lib/plates.js';
 
 test('default lb set is the commercial gym set (no 35 lb plate)', () => {
   assert.deepEqual(DEFAULT_PLATES.lb, [45, 25, 10, 5, 2.5]);
@@ -188,4 +188,99 @@ test('share query round trip and bad input', () => {
   assert.deepEqual(fromQuery('?w=100&u=kg&bar=20&p=25,15,99&c=2.5'), { unit: 'kg', target: 100, bar: 20, collar: 2.5, plates: [25, 15] });
   assert.deepEqual(fromQuery('?w=abc&u=stone&bar=-5&p=45'), {});
   assert.equal(fromQuery('?w=999999').target, undefined);
+});
+
+// Round 3
+test('plate limits: one pair of 45s forces smaller plates for 315', () => {
+  const r = solve({ target: 315, bar: 45, plates: DEFAULT_PLATES.lb, limits: { 45: 1 } });
+  assert.equal(r.status, 'exact');
+  assert.equal(r.list.find((p) => p.w === 45).n, 1);
+  assert.equal(r.side, 135);
+  assert.equal(r.total, 315);
+});
+test('plate limits never exceed what is owned, and totals stay right', () => {
+  for (const target of [135, 185, 225, 275, 315, 365, 405, 455, 505]) {
+    const limits = { 45: 2, 25: 1, 10: 2, 5: 1, 2.5: 1 };
+    const r = solve({ target, bar: 45, plates: DEFAULT_PLATES.lb, limits });
+    for (const p of r.list) assert.ok(p.n <= limits[p.w], `${target}: ${p.w} x ${p.n}`);
+    const side = r.list.reduce((a, p) => a + p.w * p.n, 0);
+    assert.equal(45 + 2 * side, r.total);
+  }
+});
+test('plate limits: weight above what you own gives the heaviest load and no upper card', () => {
+  const r = solve({ target: 500, bar: 45, plates: DEFAULT_PLATES.lb, limits: { 45: 1, 25: 0, 10: 0, 5: 0, 2.5: 0 } });
+  assert.equal(r.status, 'closest');
+  assert.equal(r.total, 135);
+  assert.equal(r.upper, null);
+});
+test('plate limits: a limit of zero removes the plate', () => {
+  const r = solve({ target: 135, bar: 45, plates: [45, 25, 10, 5], limits: { 45: 0 } });
+  assert.equal(r.status, 'exact');
+  assert.ok(!r.list.some((p) => p.w === 45));
+  assert.equal(r.total, 135);
+});
+test('plate limits: all plates limited to zero leaves the empty bar', () => {
+  const r = solve({ target: 135, bar: 45, plates: [45], limits: { 45: 0 } });
+  assert.equal(r.total, 45);
+  assert.equal(r.status, 'closest');
+});
+test('plate limits: uses fewest plates and keeps closest under and over', () => {
+  const r = solve({ target: 227, bar: 45, plates: DEFAULT_PLATES.lb, limits: { 45: 2 } });
+  assert.equal(r.lower.total, 225);
+  assert.equal(r.upper.total, 230);
+  assert.deepEqual(asList(solve({ target: 100, bar: 20, plates: K, limits: { 25: 1, 20: 5 } })), [[25, 1], [15, 1]]);
+});
+test('limits without any entry behave like no limits', () => {
+  assert.deepEqual(solve({ target: 300, bar: 45, plates: DEFAULT_PLATES.lb, limits: {} }), solve({ target: 300, bar: 45, plates: DEFAULT_PLATES.lb }));
+});
+test('warm-ups respect plate limits', () => {
+  const w = warmups({ target: 315, bar: 45, plates: DEFAULT_PLATES.lb, limits: { 45: 1 }, step: 5 });
+  for (const x of w) for (const p of x.list || []) if (p.w === 45) assert.ok(p.n <= 1);
+});
+test('countLoaded adds a loaded bar', () => {
+  const c = countLoaded({ bar: 45, counts: [{ w: 10, n: 1 }, { w: 45, n: 2 }] });
+  assert.equal(c.side, 100);
+  assert.equal(c.total, 245);
+  assert.deepEqual(c.list, [{ w: 45, n: 2 }, { w: 10, n: 1 }]);
+  assert.equal(c.plateCount, 3);
+  assert.equal(countLoaded({ bar: 45, counts: [] }).total, 45);
+  assert.equal(countLoaded({ bar: 20, collar: 2.5, counts: [{ w: 1.25, n: 1 }] }).total, 27.5);
+  assert.equal(countText(c, 'lb', 45), '245 lb: 45 x 2, 10 x 1 per side (45 lb bar)');
+  assert.equal(countText(countLoaded({ bar: 45, counts: [] }), 'lb', 45), '45 lb: the empty bar');
+});
+test('countLoaded is the inverse of solve', () => {
+  for (const target of [135, 185, 225, 300, 315]) {
+    const r = solve({ target, bar: 45, plates: DEFAULT_PLATES.lb });
+    assert.equal(countLoaded({ bar: 45, counts: r.list }).total, target);
+  }
+});
+test('bar types: typical weights, unique per unit, Olympic and women first', () => {
+  for (const u of ['lb', 'kg']) {
+    const ws = BAR_TYPES[u].map((b) => b.w);
+    assert.equal(new Set(ws).size, ws.length);
+    assert.deepEqual(ws.slice(0, 2), BARS[u]);
+  }
+  const lb = Object.fromEntries(BAR_TYPES.lb.map((b) => [b.label, b.w]));
+  assert.equal(lb['Technique bar'], 15);
+  assert.equal(lb['EZ curl bar'], 25);
+  assert.equal(lb['Trap (hex) bar'], 55);
+  assert.equal(lb['Safety squat bar'], 65);
+});
+test('improveHint names a plate that gets closer, or exact', () => {
+  const base = { bar: 45, plates: DEFAULT_PLATES.lb, all: PLATES.lb };
+  assert.deepEqual(improveHint({ target: 227, ...base }), { plate: 1.25, total: 227.5, exact: false });
+  assert.deepEqual(improveHint({ target: 227.5, ...base }), { plate: 1.25, total: 227.5, exact: true });
+  assert.equal(improveHint({ target: 225, ...base }), null);
+});
+test('improveHint works with plate limits', () => {
+  const h = improveHint({ target: 315, bar: 45, plates: [45, 25], limits: { 45: 2 }, all: PLATES.lb });
+  assert.equal(h.plate, 1.25);
+  assert.equal(h.exact, true);
+  assert.equal(improveHint({ target: 315, bar: 45, plates: [45, 25, 10, 5], limits: { 45: 2 }, all: PLATES.lb }), null);
+});
+test('share query carries plate limits', () => {
+  const q = toQuery({ target: 315, unit: 'lb', bar: 45, plates: [45, 25], limits: { 45: 2, 10: 3 } });
+  assert.equal(q, 'w=315&u=lb&bar=45&p=45,25&l=45:2');
+  assert.deepEqual(fromQuery(q).limits, { 45: 2 });
+  assert.equal(fromQuery('?u=lb&p=45&l=45:x,99:2,45:-1').limits, undefined);
 });
